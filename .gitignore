@@ -1,10 +1,21 @@
 .env
+.env.*
+!.env.example
 __pycache__/
 *.pyc
 .DS_Store
+.venv/
+dist/
+build/
+*.egg-info/
+
+# Never keep private vault content in this public code repository.
 vault/
 data/
 private/
+raw/
+wiki/
+sources/
+notes/
 *.sqlite
 *.db
-EOF
