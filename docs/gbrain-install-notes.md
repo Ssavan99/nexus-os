@@ -567,3 +567,125 @@ Verification results:
 No manual step is required for the MCP PATH fix. Configuring a skills directory would be a separate future task if published GBrain skills are needed.
 
 Phase 1C full private-brain import is not automatically approved by this fix. The MCP blocker is resolved, but the private brain still requires an explicit safety snapshot or backup and a separate instruction before full import.
+
+## Phase 1C: Full Private Brain Import, Keyword-Only
+
+Date: 2026-06-11 CDT
+
+Scope: full import of the current private Markdown/Obsidian brain into the existing local PGLite brain. No embeddings, API keys, remote HTTP, tokens, watch mode, or source-file writes were enabled.
+
+### Preflight
+
+- Nexus OS repo: `/Users/ssavan99/repos/nexus-os`
+- Initial repo status: clean
+- GBrain version: `gbrain 0.42.38.0`
+- Existing Nexus tests: 6 passed
+- Private brain path: `/Users/ssavan99/Desktop/Personal-Obsidian`
+- `VAULT_PATH` was empty, so the explicitly approved fallback path was used.
+- The private brain resolved outside Nexus OS and outside `/Users/ssavan99/repos`.
+- The private brain was not Git-tracked.
+- Markdown files found before import: 3
+- Total files found before import: 10
+- No GBrain, PGLite, SQLite, or database artifacts were present in the private brain.
+
+The first `gbrain doctor --json` and a read-only CLI search timed out on the PGLite lock because two local `gbrain serve` stdio processes were active. Those processes were stopped before import. A repeated doctor check connected successfully to the existing 5-page brain.
+
+### Import
+
+Exact command:
+
+```sh
+/Users/ssavan99/.bun/bin/gbrain import /Users/ssavan99/Desktop/Personal-Obsidian --no-embed
+```
+
+Result:
+
+- 3 Markdown files found.
+- 3 pages imported.
+- 50 chunks created.
+- 0 pages skipped.
+- 0 errors.
+- No embeddings generated.
+- Post-import doctor connected successfully and reported 8 total pages and 76 unembedded chunks.
+
+Warnings:
+
+- Two source pages exceeded GBrain's content-sanity size warning threshold. No pages were split or modified.
+- One imported page shared a content hash with the previously imported tiny real-brain subset page but had a different frontmatter ID. GBrain indexed both records.
+- Expected doctor warnings remain for missing embeddings/provider credentials and optional quality features.
+
+### Source Safety
+
+The private brain is not Git-tracked, so source safety was checked with path and metadata snapshots stored outside the vault.
+
+After import:
+
+- Total file inventory was identical.
+- Markdown file count remained 3.
+- All Markdown sizes and modification/change timestamps were identical.
+- No files were created, deleted, moved, or rewritten.
+- No GBrain metadata, cache, config, PGLite, SQLite, or database files appeared inside the private brain.
+
+GBrain state remains under:
+
+```text
+/Users/ssavan99/.gbrain
+```
+
+Conclusion: `gbrain import --no-embed` indexed the full current private brain without modifying its source files.
+
+### CLI Search And Query
+
+The following approved non-sensitive phrases were searched:
+
+```text
+shared organizational brain
+building layer for everything
+agent infrastructure at YC
+```
+
+All three CLI searches returned one matching page, the expected safe Y Combinator/company-superintelligence page. No private note excerpts were recorded in this document.
+
+The optional lightweight query was run:
+
+```sh
+/Users/ssavan99/.bun/bin/gbrain query "What high-level topics are represented in this brain?"
+```
+
+Result: `No results.`
+
+Keyword search works. Natural-language synthesis remains deferred in the no-key/no-embedding configuration.
+
+### MCP Verification
+
+The existing Codex MCP registration remains enabled and correctly uses:
+
+```text
+command: /Users/ssavan99/.bun/bin/gbrain
+args: serve
+transport: stdio
+```
+
+Live MCP verification was not completed in this Phase 1C session. The GBrain stdio processes had to be stopped to release PGLite's single-process lock for CLI import, and GBrain tools were not re-exposed in the already-running Codex session afterward. Dynamic tool discovery returned unrelated connector tools only.
+
+No MCP configuration was changed. A fresh Codex session should rerun `get_brain_identity`, `list_skills`, and the same three safe searches. Phase 1B.5 had already verified the corrected absolute executable path and successful MCP search before this import.
+
+### Repo Safety
+
+Before documentation:
+
+- Nexus OS repo status remained clean.
+- No private brain files entered Nexus OS.
+- No GBrain database, cache, config, or PGLite files entered Nexus OS.
+- Existing `.env` contents were not printed or changed.
+
+### Phase 1D And Rollback
+
+The full import and keyword-search path are ready for Phase 1D search-quality evaluation. Enabling embeddings, adding API keys, or incurring provider cost still requires a separate explicit decision. A fresh-session MCP smoke test should be completed before treating Phase 1C MCP verification as closed.
+
+Rollback notes:
+
+- The private source requires no rollback because it was unchanged.
+- GBrain's imported index data is isolated under `/Users/ssavan99/.gbrain`.
+- No automatic database deletion or reinitialization was performed.
+- Any destructive removal or restoration of GBrain state requires explicit approval and should preserve or back up the current local brain first.
