@@ -1,258 +1,125 @@
 # Nexus OS
 
-Nexus OS is the public code engine for an LLM-maintained knowledge system: a personal LLM Wiki, startup/team memory layer, and future agent workflow engine for private Obsidian vaults.
+Nexus OS is a personalized GBrain-based operating layer for a private Markdown/Obsidian brain.
 
-The central idea comes from Karpathy's LLM Wiki pattern: instead of only retrieving raw documents at query time, an LLM incrementally builds a persistent, interlinked Markdown wiki. Raw sources remain the source of truth; generated wiki pages become the compounding synthesis layer; a schema tells the LLM how to maintain the system.
+It is not a standalone memory engine and not a replacement for GBrain. GBrain is the intended core memory/search/MCP/skills engine. Nexus OS stores the personal schemas, prompts, workflows, roadmap, and control logic that make the GBrain-backed brain useful for personal, career, startup, and agent workflows.
 
-The first two target use cases are:
+## Final Architecture
 
-- Personal knowledge wiki: goals, health, psychology, self-improvement, journal entries, articles, podcast notes, saved posts, and a structured picture of yourself over time.
-- Startup, business, and team knowledge wiki: project notes, technical notes, business notes, customer research, meeting transcripts, Slack-style discussions, project documents, and decisions.
+The system has four main parts:
 
-## Public Repo, Private Vault
+- Markdown/Obsidian brain: the private, human-readable source of truth.
+- GBrain: the local engine that indexes and serves the brain through search, MCP, skills, and future dream-cycle or cron workflows.
+- Nexus OS: this public repo, containing personalization, workflow instructions, prompts, schemas, roadmap, and future custom UI or skills.
+- Agents and clients: Codex, Claude Code, ChatGPT via MCP, and later Hermes/OpenClaw, all connecting to the same GBrain-backed memory.
 
-This repository must never contain your real notes, clipped articles, raw sources, generated wiki pages, or personal vault files. It only contains code, templates, and documentation.
+Shared memory means shared brain files plus the GBrain index. It does not mean shared chat histories.
 
-Your real Obsidian vault lives outside this repo and is selected with:
+See:
+
+- [docs/architecture.md](docs/architecture.md)
+- [docs/gbrain-integration.md](docs/gbrain-integration.md)
+- [docs/decision-log.md](docs/decision-log.md)
+- [docs/roadmap.md](docs/roadmap.md)
+
+## Public Repo, Private Brain
+
+This repository must never contain your real notes, clipped articles, raw sources, generated wiki pages, or personal brain files. It only contains code, templates, prompts, workflows, schemas, and documentation.
+
+Your real Markdown/Obsidian brain lives outside this repo. Existing prototype helpers read that location from:
 
 ```sh
-export VAULT_PATH="/absolute/path/to/your/private/obsidian/vault"
+export VAULT_PATH="/absolute/path/to/your/private/obsidian/brain"
 ```
 
 You can also copy `.env.example` to `.env` for local use. `.env` is ignored by git.
 
-Nexus OS refuses to run if:
+Prototype helpers refuse to run if:
 
 - `VAULT_PATH` is missing.
 - `VAULT_PATH` resolves inside this repository.
 
-This protects the public codebase/private vault separation.
+This protects the public repo/private brain boundary.
 
-## Vault Architecture
+## What Nexus OS Owns
 
-Nexus OS initializes and expects this structure inside the external vault:
+Nexus OS should contain:
 
-```text
-vault/
-  raw/
-    sources/
-      instagram/
-      youtube/
-      articles/
-      meetings/
-      journals/
-      documents/
-    assets/
-  wiki/
-    index.md
-    log.md
-    _schema.md
-    areas/
-      personal/
-      career/
-      ai-learning/
-      startups/
-      projects/
-    concepts/
-    decisions/
-    questions/
-    summaries/
-    people/
-    organizations/
-```
+- Personal operating principles.
+- Workflow prompts.
+- Job-search workflows.
+- Startup and business workflows.
+- Weekly planning workflows.
+- Capture and ingestion instructions.
+- Roadmaps and architecture decisions.
+- Personal schemas and conventions.
+- Thin integration glue around GBrain when needed.
+- Future custom UI or skills specific to this operating layer.
 
-- `raw/` contains curated source documents organized by source type. Raw sources are immutable: tools may add files, but they must not overwrite or delete existing raw files automatically.
-- `raw/sources/` separates capture workflows such as Instagram, YouTube, articles, meetings, journals, and documents.
-- `wiki/areas/` contains knowledge domains such as personal, career, AI learning, startups, and projects.
-- `wiki/` also contains general folders for concepts, decisions, questions, summaries, people, and organizations.
-- `wiki/` contains LLM-generated Markdown pages. The LLM owns this layer and may update summaries, area pages, concept pages, decisions, questions, people, organizations, comparisons, and syntheses.
-- `wiki/_schema.md` records local conventions for future LLM sessions.
-- `wiki/index.md` is the content catalog.
-- `wiki/log.md` is the chronological append-only activity record.
+## What GBrain Owns
 
-The structure is intentionally flexible. Source type and knowledge domain are separate so one Instagram post, YouTube transcript, meeting, or journal entry can update several wiki areas. Add new `raw/sources/` folders only when a new capture workflow needs them; add new `wiki/areas/` pages or folders when the knowledge base naturally grows.
+GBrain should own:
 
-## Setup
+- Indexing.
+- Search.
+- Retrieval.
+- MCP server/tool surfaces.
+- Skills engine.
+- Memory engine internals.
+- Future scheduled or dream-cycle workflows.
 
-1. Create or choose a private Obsidian vault outside this repo.
-2. Set `VAULT_PATH`:
+Do not build duplicate GBrain features in Nexus OS unless explicitly requested later.
 
-```sh
-export VAULT_PATH="/absolute/path/to/your/private/obsidian/vault"
-```
+## Prototype/Fallback Helpers
 
-3. Optional: use a local `.env`:
+The current Nexus OS CLI/search/ingest implementation is reclassified as prototype/fallback workflow helpers.
 
-```sh
-cp .env.example .env
-```
-
-Then edit `.env` with your private vault path.
-
-4. Run commands from this checkout with Python:
+These commands may remain while GBrain is not installed or while workflows are being validated:
 
 ```sh
 PYTHONPATH=src python -m nexus_os --help
 ```
 
-Or install the package in editable mode:
+Current helper commands include:
 
-```sh
-python -m pip install -e .
-nexus-os --help
-```
+- `check`
+- `init`
+- `add-note`
+- `search`
+- `plan-ingest`
+- `draft-summary`
+- `append-log`
+- `rebuild-index`
 
-## Initialize The Vault
+Do not remove these helpers yet. Retire or delete them only after GBrain is installed, tested, and Nexus workflows no longer depend on them.
 
-Initialize the external vault folders and starter wiki files:
+## Manual Workflow During Transition
 
-```sh
-PYTHONPATH=src python -m nexus_os init
-```
-
-This creates missing directories and starter Markdown files. It does not modify existing raw sources.
-
-Check the configured vault:
-
-```sh
-PYTHONPATH=src python -m nexus_os check
-```
-
-## Add First Notes
-
-Add a Markdown source to the immutable raw layer:
-
-```sh
-PYTHONPATH=src python -m nexus_os add-note ./my-first-note.md --source-type documents
-```
-
-The file is copied into:
-
-```text
-$VAULT_PATH/raw/sources/documents/
-```
-
-If a file with the same name already exists, Nexus OS fails instead of overwriting it.
-
-`--source-type` defaults to `documents`. Use source-type folders such as `articles`, `meetings`, `journals`, `instagram`, or `youtube` when that better describes the raw capture format.
-
-After adding sources, the intended LLM workflow is:
-
-1. Read one raw source at a time.
-2. Identify its source type and the knowledge areas it touches.
-3. Write a source summary under `wiki/summaries/`.
-4. Update `wiki/index.md`.
-5. Update relevant area, concept, decision, question, people, and organization pages.
-6. Append an entry to `wiki/log.md`.
-
-## Manual Ingest Workflow
-
-Phase 1 is a Codex-driven manual LLM Wiki workflow. Nexus OS provides helper commands, templates, and guardrails, but it does not call an LLM API and does not require an OpenAI API key yet.
-
-Example flow:
-
-1. Add a note:
+Until GBrain is installed and connected, the prototype helpers can still support a manual Codex-driven workflow:
 
 ```sh
 PYTHONPATH=src python -m nexus_os add-note ./note.md --source-type documents
-```
-
-2. Plan the ingest:
-
-```sh
 PYTHONPATH=src python -m nexus_os plan-ingest raw/sources/documents/note.md
-```
-
-3. Draft the source summary:
-
-```sh
 PYTHONPATH=src python -m nexus_os draft-summary raw/sources/documents/note.md
-```
-
-4. Ask Codex to complete the summary and update related pages:
-
-```text
-Process raw/sources/documents/note.md using AGENTS.md.
-Complete the draft summary, update related wiki pages, rebuild the index, and append the log.
-```
-
-5. Rebuild the index:
-
-```sh
 PYTHONPATH=src python -m nexus_os rebuild-index
+PYTHONPATH=src python -m nexus_os append-log --type ingest --title "Note Title" --path "raw/sources/documents/note.md"
 ```
 
-6. Append the log:
+This is not the final memory architecture. It is a fallback path for early workflow design.
 
-```sh
-PYTHONPATH=src python -m nexus_os append-log \
-  --type ingest \
-  --title "Note Title" \
-  --path "raw/sources/documents/note.md" \
-  --page "wiki/summaries/note-title.md"
-```
+## What Not To Build Here
 
-`plan-ingest` only prints a structured plan. `draft-summary` creates a structured page from `templates/source_summary.md`, but it does not pretend to summarize with AI. Codex or a human should complete the summary and related wiki updates.
+Do not build these in Nexus OS unless a later explicit architecture decision changes this:
 
-## Future Capture Workflows
+- Custom vector database.
+- Custom RAG/search engine.
+- Custom MCP server.
+- Custom skills engine.
+- Duplicate GBrain memory engine.
+- Background dream-cycle/cron engine.
 
-Instagram may start with a manually maintained raw file:
+Prefer configuring, extending, or integrating with GBrain.
 
-```text
-raw/sources/instagram/instagram_saved_links.md
-```
+## Next Step
 
-Later, Nexus OS should process those links or pasted post contents into major categories such as career/job notes, AI learning/implementation notes, and startup/business notes. That processor is not built yet.
-
-YouTube links and transcripts should eventually become source summaries with metadata such as video title, channel, URL, date captured, transcript source, key ideas, implementation notes, and related wiki pages. That processor is roadmap work, not current behavior.
-
-## Search
-
-Search the external vault:
-
-```sh
-PYTHONPATH=src python -m nexus_os search "query text"
-```
-
-Search only generated wiki pages:
-
-```sh
-PYTHONPATH=src python -m nexus_os search "query text" --layer wiki
-```
-
-Search only raw sources:
-
-```sh
-PYTHONPATH=src python -m nexus_os search "query text" --layer raw
-```
-
-The current search is intentionally simple: local, case-insensitive text search over Markdown and text files. It is enough for early vaults and keeps the first version dependency-free.
-
-## Current Scope
-
-Implemented now:
-
-- Safe `VAULT_PATH` resolution.
-- Refusal to operate inside this public repo.
-- External vault initialization.
-- Immutable add-by-copy behavior for raw notes under `raw/sources/documents/`.
-- Manual ingest planning.
-- Draft source-summary creation from templates.
-- Log append and deterministic index rebuild helpers.
-- Basic local search.
-- README and roadmap documentation.
-
-Intentionally future work:
-
-- LLM-driven ingest that updates many wiki pages in one pass.
-- Entity/concept page generation.
-- Contradiction detection and source-aware claim revision.
-- Wiki linting for stale claims, orphans, missing links, and weak synthesis.
-- Instagram saved-link and pasted-post processing.
-- YouTube link/transcript processing with source metadata.
-- Hybrid BM25/vector search or `qmd` integration.
-- MCP tools for agent-native wiki operations.
-- Optional outputs like Marp slide decks, Dataview-ready frontmatter, charts, and canvases.
-- Human review workflows for team or business wikis.
-
-See [docs/roadmap.md](docs/roadmap.md) for the phased product direction.
+The next implementation step is Phase 1: install and configure GBrain against the private Markdown/Obsidian brain, then verify indexing/search and agent connection paths without copying private brain files into this public repo.

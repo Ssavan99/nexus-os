@@ -1,106 +1,88 @@
 # Nexus OS Roadmap
 
-This roadmap preserves the useful ideas from the LLM Wiki pattern while keeping implementation phased and reviewable.
+Nexus OS is now planned as a personalized workflow/config/control layer around GBrain, not a standalone memory engine.
 
-## Phase 0: Public Code, Private Vault
+The current CLI/search/ingest code remains available as prototype/fallback workflow helpers. Do not remove it until GBrain is installed, tested, and Nexus workflows no longer depend on it.
 
-Status: started.
+## Phase 0: Architecture Reset
 
-- Keep this repository limited to code, templates, and documentation.
-- Read the private vault path from `VAULT_PATH`.
-- Refuse to operate when `VAULT_PATH` is missing or points inside this repo.
-- Initialize a safe external vault layout.
-- Preserve raw sources as immutable files.
-- Provide basic local search.
-- Separate raw source type folders from generated wiki knowledge areas.
+Status: current.
 
-## Phase 1: Manual LLM Wiki Workflow
+- Record the final architecture decision.
+- Make GBrain the core memory/search/MCP/skills engine.
+- Reclassify existing Nexus OS CLI/search/ingest code as prototype/fallback helpers.
+- Preserve the public repo/private brain boundary.
+- Avoid building duplicate GBrain features in Nexus OS.
+- Document what belongs in Obsidian/Markdown, GBrain, Nexus OS, and agent clients.
 
-Status: started.
+## Phase 1: Local Brain + GBrain Setup
 
-Goal: make the LLM a disciplined wiki maintainer while the user stays in the loop.
+Goal: establish the local brain and connect it to GBrain safely.
 
-- Provide page templates for summaries, areas, concepts, projects, decisions, questions, people, and organizations.
-- Plan ingests with `nexus-os plan-ingest` before wiki edits.
-- Draft structured source summaries with `nexus-os draft-summary`.
-- Ingest one source at a time.
-- Generate source summary pages under `wiki/summaries/`.
-- Update area pages, concept pages, decision pages, question pages, people pages, and organization pages.
-- Keep source type separate from knowledge domain so one source can affect many wiki areas.
-- Keep `wiki/index.md` as the first navigation surface.
-- Keep `wiki/log.md` as an append-only timeline.
-- Rebuild the index and append log entries with deterministic helper commands.
-- Use Obsidian to review graph structure, links, and generated pages.
+- Install and configure GBrain after architecture docs are settled.
+- Point GBrain at the private Markdown/Obsidian brain folder.
+- Verify local indexing and search.
+- Confirm private brain files are not copied into this public repo.
+- Decide how the existing prototype helpers should coexist with GBrain during transition.
+- Keep a rollback path until GBrain is proven against real workflows.
 
-## Phase 2: Query-To-Wiki Memory
+## Phase 2: Codex / Claude Code Connection
 
-Goal: make useful answers durable instead of leaving them in chat history.
+Goal: connect coding and writing agents to the same GBrain-backed memory.
 
-- Search `wiki/index.md` before raw sources.
-- Answer questions from the generated wiki with citations.
-- Save durable comparisons, analyses, and discoveries into the appropriate wiki area or general folder.
-- Add source-aware frontmatter for future Dataview queries.
+- Connect Codex to GBrain through MCP or the supported local interface.
+- Connect Claude Code to the same brain.
+- Connect ChatGPT via MCP when available and appropriate.
+- Verify shared memory means shared Markdown brain files plus GBrain index, not shared chat histories.
+- Document agent-specific operating instructions.
 
-## Phase 3: Wiki Linting And Maintenance
+## Phase 3: Nexus Workflows
 
-Goal: keep the wiki healthy as it grows.
+Goal: build personalized workflows on top of GBrain.
 
-- Detect stale claims superseded by newer sources.
-- Flag contradictions between pages.
-- Find orphan pages and missing inbound links.
-- Suggest entity or concept pages that should exist.
-- Identify important unanswered questions and source gaps.
+- Job-search workflows.
+- Startup and business workflows.
+- Weekly planning and review workflows.
+- Personal knowledge maintenance workflows.
+- Research and learning workflows.
+- Ingestion instructions for raw captures and source summaries.
+- Prompt packs and schemas that tell agents how to operate.
 
-## Phase 4: Better Search And Agent Tools
+## Phase 4: Capture Pipelines
 
-Goal: support larger vaults without forcing every query through raw retrieval.
+Goal: make it easier to capture useful material into the brain without overbuilding infrastructure.
 
-- Add a stronger local search backend, such as `qmd`, BM25, vector search, or hybrid search.
-- Expose search and ingest operations through MCP tools.
-- Add structured command outputs that agent sessions can consume reliably.
-- Preserve fully local/on-device options where possible.
+- Instagram saved-link and pasted-post workflow.
+- YouTube link/transcript workflow.
+- Articles, documents, meeting notes, Slack-style discussions, and customer research.
+- Source metadata conventions.
+- Human review points before important generated updates become durable brain knowledge.
+- Prefer GBrain-compatible capture patterns over custom memory engines.
 
-## Phase 5: Instagram And Saved-Post Workflows
+## Phase 5: Agent/Dream Cycle
 
-Goal: turn saved social posts into durable wiki knowledge without locking the system to one platform.
+Goal: add scheduled or background intelligence once the core brain is stable.
 
-- Start manually with saved links in `raw/sources/instagram/instagram_saved_links.md`.
-- Later support pasted post contents, exports, or fetched content when available.
-- Process useful items into career/job notes, AI learning/implementation notes, startup/business notes, and any other areas the source requires.
-- Preserve the original links and captures as immutable raw sources.
-- Let the LLM suggest new areas or pages when saved posts do not fit existing categories.
+- Use GBrain's future dream-cycle, cron, or scheduled workflow capabilities where possible.
+- Periodically lint stale claims, contradictions, open loops, and missing links.
+- Suggest new questions, areas, and source-gathering tasks.
+- Maintain dashboards or review queues for the user.
+- Avoid building a custom background automation engine in Nexus OS unless explicitly requested later.
 
-## Phase 6: YouTube Workflows
+## Phase 6: PA / Cofounder OS
 
-Goal: turn videos and transcripts into source summaries and connected wiki pages.
+Goal: evolve Nexus OS into a personal assistant and cofounder operating system.
 
-- Store YouTube links, transcripts, or captured metadata under `raw/sources/youtube/`.
-- Generate source summaries with video title, channel, URL, date captured, transcript source, key ideas, implementation notes, and related wiki pages.
-- Update relevant areas such as career, AI learning, startups, projects, or new areas as needed.
-- Keep transcript provenance clear so claims can be traced back to the source.
-
-## Phase 7: Rich Outputs
-
-Goal: let wiki knowledge become artifacts.
-
-- Generate Marp slide decks from wiki syntheses.
-- Produce charts or notebooks from structured notes.
-- Support canvases or maps for relationship-heavy domains.
-- Optionally store image assets locally under `raw/assets/` when the user chooses.
-
-## Phase 8: Team And Workflow Engine
-
-Goal: evolve from personal wiki to reviewed, multi-step agent workflows.
-
-- Support human review before generated wiki updates are accepted.
-- Track pending ingest tasks and review status.
-- Integrate meeting transcripts, Slack exports, customer calls, and project docs.
-- Add workflow runs for recurring lint, research, and summarization tasks.
+- Use the shared GBrain-backed brain as the memory layer for personal, career, startup, and project work.
+- Add higher-level workflows for planning, prioritization, outreach, product thinking, customer research, and execution tracking.
+- Support future clients such as Hermes/OpenClaw through the same memory layer.
+- Build custom UI or skills only where they personalize and orchestrate the GBrain-backed system.
 
 ## Design Principles
 
-- Raw sources are source of truth and immutable.
-- Generated wiki pages are editable by the LLM.
-- The user curates sources, asks questions, and reviews direction.
-- The LLM handles summarizing, cross-linking, filing, contradiction checks, and upkeep.
-- Future automation should extend the current structure instead of replacing it.
+- Markdown/Obsidian brain files are the human-readable source of truth.
+- GBrain owns indexing, search, MCP, skills, and memory infrastructure.
+- Nexus OS owns personal schemas, prompts, workflow docs, roadmaps, and control logic.
+- Agents are clients/operators that use the shared GBrain-backed brain.
+- Do not duplicate GBrain features in Nexus OS.
+- Do not store private brain files in this public repo.
