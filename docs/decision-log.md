@@ -63,3 +63,9 @@ This keeps the system simpler:
 - The Markdown brain remains the human-readable source of truth.
 - Nexus OS keeps personalization, workflows, prompts, and control logic.
 - Multiple agents can share the same memory through GBrain without each building separate memory stacks.
+
+## [2026-06-10] Integration Risk: Codex MCP Needs Stable GBrain PATH
+
+Observation: Phase 1B confirmed that GBrain CLI commands work when `/Users/ssavan99/.bun/bin` is added to `PATH`, but the configured Codex MCP server uses the bare command `gbrain serve`. In the fresh Codex shell used for Phase 1B, `gbrain` was not resolvable without a PATH override, and GBrain MCP tools were not visible to the session.
+
+Decision: do not proceed to full private brain import as a completed MCP integration milestone until a fresh Codex session can launch GBrain MCP and verify `get_brain_identity`, `list_skills`, and MCP search. Keep the integration local/stdio and no-token for now.
