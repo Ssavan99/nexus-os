@@ -519,3 +519,51 @@ Safe next step:
 2. Verify `get_brain_identity`, `list_skills`, and MCP search.
 3. Optionally rerun one more tiny subset import with 2-5 visible notes.
 4. Proceed to Phase 1C full private brain import only after MCP visibility is confirmed and the private brain has an explicit safety snapshot or backup.
+
+## Phase 1B.5: Codex MCP PATH Fix
+
+Date: 2026-06-11 CDT
+
+Scope: replace the bare GBrain MCP command with the absolute Bun-installed executable path and verify the existing local PGLite brain through MCP. No import, sync, embedding, token, API key, or remote HTTP configuration was performed.
+
+GBrain executable:
+
+```text
+/Users/ssavan99/.bun/bin/gbrain
+```
+
+Codex MCP configuration before:
+
+```text
+transport: stdio
+command: gbrain
+args: serve
+```
+
+The registration was replaced through the official Codex CLI:
+
+```sh
+codex mcp remove gbrain
+codex mcp add gbrain -- /Users/ssavan99/.bun/bin/gbrain serve
+```
+
+Codex MCP configuration after:
+
+```text
+transport: stdio
+command: /Users/ssavan99/.bun/bin/gbrain
+args: serve
+```
+
+Verification results:
+
+- GBrain MCP tools became visible in the current Codex session.
+- `get_brain_identity` succeeded and reported GBrain `0.42.38.0`, PGLite, 5 pages, and 26 chunks.
+- `list_skills` reached the server but returned `storage_error` because no skills directory is configured. This is consistent with the earlier setup state where no skills were installed.
+- MCP search for `nexus-test-phrase-alpha` succeeded and returned the disposable test page.
+- MCP search for `shared organizational brain` succeeded and returned the tiny real-brain subset page.
+- Another fresh Codex session was not required for this verification. Future sessions should use the corrected absolute executable path automatically.
+
+No manual step is required for the MCP PATH fix. Configuring a skills directory would be a separate future task if published GBrain skills are needed.
+
+Phase 1C full private-brain import is not automatically approved by this fix. The MCP blocker is resolved, but the private brain still requires an explicit safety snapshot or backup and a separate instruction before full import.

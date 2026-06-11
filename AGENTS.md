@@ -30,6 +30,14 @@ Read these docs before making architecture changes:
 - Do not expose private `.env` values in responses.
 - Never silently delete, move, rename, or overwrite raw sources.
 
+## Local Path Conventions
+
+- Repositories, projects, and test repositories should default to `/Users/ssavan99/repos`.
+- MCP installs and MCP repositories should default to `/Users/ssavan99/MCPs`.
+- Do not create repositories or MCP installs directly under `/Users/ssavan99` unless explicitly requested.
+- User-level tool state may remain in tool-default locations such as `~/.gbrain`, `~/.bun`, or `~/.codex`.
+- The private brain must remain outside Nexus OS and must not be moved without explicit instruction.
+
 ## Do Not Duplicate GBrain
 
 Do not build duplicate versions of GBrain functionality in Nexus OS unless explicitly requested later.
