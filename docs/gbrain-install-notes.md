@@ -689,3 +689,59 @@ Rollback notes:
 - GBrain's imported index data is isolated under `/Users/ssavan99/.gbrain`.
 - No automatic database deletion or reinitialization was performed.
 - Any destructive removal or restoration of GBrain state requires explicit approval and should preserve or back up the current local brain first.
+
+## Phase 1C.5: Fresh MCP Smoke Test After Full Import
+
+Date: 2026-06-11 CDT
+
+Scope: read-only verification of the existing full private-brain index through GBrain MCP and CLI. No import, sync, embedding, API key, token, remote HTTP, or private-source write operation was performed.
+
+### Preflight And Configuration
+
+- GBrain version: `gbrain 0.42.38.0`
+- Existing Nexus tests: 6 passed
+- `codex mcp list` confirmed that the enabled `gbrain` stdio server uses:
+
+```text
+/Users/ssavan99/.bun/bin/gbrain serve
+```
+
+- `gbrain doctor --json` completed with health score 95 and brain checks score 100. It reported a connection warning while the MCP process held the PGLite database lock.
+
+### MCP Results
+
+- `get_brain_identity`: succeeded and reported PGLite, 8 pages, and 76 chunks.
+- `list_skills`: reached the MCP server, but did not return a skill catalog. It returned `storage_error` because no skills directory is configured.
+- Fake phrase search for `nexus-test-phrase-alpha`: succeeded with 1 result, the fake `Goals` page.
+- Approved private-brain phrase search for `shared organizational brain`: succeeded with 1 result, the documented Y Combinator/company-superintelligence page.
+- No private note excerpts were recorded in this repository.
+
+### CLI Comparison And Process Handoff
+
+The first CLI search attempt timed out waiting for the PGLite lock because the active GBrain MCP process owned the single-process database connection.
+
+After the MCP checks completed, only the active `/Users/ssavan99/.bun/bin/gbrain serve` process was stopped gracefully. The same read-only CLI search then returned 1 result for the same documented page.
+
+Comparison result: CLI and MCP matched.
+
+Stopping the MCP server closed this Codex session's GBrain transport. A later MCP call in the same session returned `Transport closed`; a new Codex session is required before the next MCP operation. The absolute command configuration remains correct and unchanged.
+
+### Source And Repo Safety
+
+- The private brain aggregate file-metadata snapshot recorded 10 files, including 3 Markdown files.
+- The final aggregate metadata hash matched the initial snapshot exactly.
+- No private-source write commands were run.
+- No private source files changed during the checked window.
+- No private content was copied into Nexus OS.
+
+### Phase 1D Readiness
+
+Phase 1D embeddings/search-quality evaluation is safe to plan from the import and MCP-integration perspective. Enabling embeddings, adding a provider key, or incurring provider cost still requires separate explicit approval.
+
+Operational constraint: PGLite CLI commands that need a database connection may require gracefully stopping the active GBrain MCP process first. Start a fresh Codex session afterward when MCP access is needed again.
+
+Blockers:
+
+- No blocker for keyword-only CLI or MCP search.
+- `list_skills` remains unavailable until a skills directory is explicitly configured; that is outside this smoke-test scope.
+- The current session's MCP transport is closed after the required CLI cross-check and will be restored by starting a fresh Codex session.
