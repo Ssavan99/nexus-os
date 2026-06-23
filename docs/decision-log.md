@@ -75,3 +75,25 @@ Decision: do not proceed to full private brain import as a completed MCP integra
 Decision: organize the private brain around three simple stages: `raw/` for immutable or minimally edited sources, `inbox/` for fast and messy capture, and `wiki/` for cleaned, synthesized, durable knowledge.
 
 Broad areas, reusable concepts, durable decisions, open questions, summaries, people, and organizations live under `wiki/` when useful. During large import sessions, capture speed takes priority over detailed organization; GBrain and agent workflows can help synthesize material later without duplicating memory infrastructure in Nexus OS.
+
+## [2026-06-23] Workflow Decision: Startup Source Coverage And Dashboard Pages
+
+Decision: startup synthesis should maintain an explicit `source-coverage.md` page and a direct-answer `startup-dashboard.md` page inside the private vault.
+
+Reason: the first startup synthesis passes were useful but underused broader founder/build resources. A coverage page makes it clear which raw assets, Instagram notes, YouTube notes, idea notes, and inbox notes have been integrated, while the dashboard gives agents and the user a concise operating surface for focus, active/parked ideas, next experiments, and missing evidence.
+
+This remains a private-vault workflow convention. Nexus OS records the decision, but private startup notes and generated wiki pages stay outside the public repo.
+
+## [2026-06-23] Phase 2A Decision: Codex Uses GBrain MCP As Memory Boundary
+
+Decision: Codex should use the local GBrain MCP server as the read/search boundary for private-brain context, with `/Users/ssavan99/.bun/bin/gbrain serve` as the expected stdio command.
+
+Nexus OS remains the public workflow/config/control repo. Private brain content stays in the private Markdown/Obsidian vault and is accessed through GBrain or explicit private-vault tasks. If GBrain MCP tools are unavailable, Codex should inspect MCP configuration and report the exact failure rather than improvising with imports, sync, embeddings, or private-file copying.
+
+Reason: this keeps Codex connected to shared memory while avoiding a duplicate Nexus OS memory engine and preserving the public repo/private brain boundary.
+
+## [2026-06-23] Phase 2A.1 Verification: Fresh-Session Codex MCP Runtime
+
+Verification: a fresh Codex session successfully launched the configured local GBrain MCP server with `/Users/ssavan99/.bun/bin/gbrain serve` over stdio. `get_brain_identity` returned the local PGLite-backed brain identity, and read-only MCP searches for startup dashboard, customer discovery, weekly startup review, and shared organizational brain queries returned results from the indexed private brain.
+
+Follow-up: `list_skills` reached the MCP server but returned a GBrain `storage_error` because no skills directory is configured on the server host. Treat this as a skills-publication configuration gap, not the earlier MCP transport failure.

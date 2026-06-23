@@ -1049,3 +1049,120 @@ Post-import search verification succeeded:
 ### Recommended Next Step
 
 Use `wiki/areas/startups/weekly-startup-review.md` at the end of the next 7-day validation cycle. The practical next move is to choose one track, run the first validation experiment, save raw evidence, and then re-import keyword-only.
+
+## Phase 1G: Startup Resource Integration Pass
+
+Date: 2026-06-23 CDT
+
+Scope: integrate previously ignored startup/founder/build resources into practical private-vault startup operating pages. No raw/source notes were modified, deleted, moved, renamed, or overwritten. No embeddings, API keys, sync/watch, remote HTTP, OAuth, Hermes, or OpenClaw setup was run.
+
+### Preflight
+
+- Nexus OS repo root: `/Users/ssavan99/repos/nexus-os`
+- Initial Nexus OS repo status: clean
+- GBrain version: `gbrain 0.42.38.0`
+- `gbrain doctor --json` connected successfully and reported 76 pages, with expected warnings related to missing embeddings/search quality and optional setup.
+- Existing Nexus tests passed before edits: 6 tests, `OK`.
+
+### Initial Import
+
+Exact import command:
+
+```sh
+/Users/ssavan99/.bun/bin/gbrain import "/Users/ssavan99/Desktop/Personal-Obsidian" --no-embed
+```
+
+Result:
+
+- 66 Markdown files found.
+- 0 pages imported.
+- 66 unchanged pages skipped.
+- 0 chunks created.
+- 0 errors.
+- No embeddings generated.
+
+### Ignored Resources Integrated
+
+Resource groups processed:
+
+- Raw assets: AI cofounder references, investor list, free founder programs, GStack, NameGPT, and Notion Developer Platform.
+- Raw idea notes: company superintelligence/company brain and random startup ideas.
+- Instagram/founder resources: app launch checklist, founder-thinking prompts, compliance notes, build/launch guide, AI-native company operations, Claude founder workflows, startup stack, SaaS validation, plus pitch/legal/listing/startup-term notes.
+- YouTube/build resources: full SaaS stack, app-growth case study, and vibe-coding fundamentals.
+- Inbox/loose notes: loose startup thoughts and Nexus/GBrain system workflow notes.
+
+Sensitive/token-like raw URL material was not copied into generated wiki pages or this public repo.
+
+### Pages Created
+
+Created private-vault startup operating pages:
+
+```text
+wiki/areas/startups/source-coverage.md
+wiki/areas/startups/founder-operating-system.md
+wiki/areas/startups/customer-discovery-playbook.md
+wiki/areas/startups/app-build-and-launch-playbook.md
+wiki/areas/startups/ai-startup-tech-stack.md
+wiki/areas/startups/founder-resources-and-programs.md
+wiki/areas/startups/compliance-and-launch-checklist.md
+wiki/areas/startups/startup-dashboard.md
+```
+
+### Pages Updated
+
+Updated private-vault pages:
+
+```text
+wiki/areas/startups/index.md
+wiki/areas/startups/next-actions.md
+wiki/areas/startups/ai-interactive-story-game-platform.md
+wiki/areas/startups/convenience-store-platform.md
+wiki/areas/startups/civil-engineering-platform.md
+wiki/log.md
+```
+
+`next-actions.md` is now source-grounded: each action references a playbook, source group, or explicit deferred work item. `startup-dashboard.md` can now answer direct startup questions such as what to focus on, what resources to use, which idea is active, what is parked, the next concrete experiment, and missing evidence.
+
+### Post-Update Import
+
+Exact import command:
+
+```sh
+/Users/ssavan99/.bun/bin/gbrain import "/Users/ssavan99/Desktop/Personal-Obsidian" --no-embed
+```
+
+Result:
+
+- 74 Markdown files found.
+- 14 pages imported.
+- 60 unchanged pages skipped.
+- 16 chunks created.
+- 0 errors.
+- No embeddings generated.
+
+Warnings:
+
+- Existing large raw/source notes again exceeded GBrain's content-sanity warning threshold.
+- No source notes were split or modified.
+
+### Search Verification
+
+Post-import search verification succeeded:
+
+- `source coverage` found `wiki/areas/startups/source-coverage` and `startup-dashboard`.
+- `founder operating system` found `wiki/areas/startups/founder-operating-system`.
+- `customer discovery playbook` found `wiki/areas/startups/customer-discovery-playbook`.
+- `app build and launch playbook` found `wiki/areas/startups/app-build-and-launch-playbook`.
+- `AI startup tech stack` found `wiki/areas/startups/ai-startup-tech-stack`.
+- `compliance and launch checklist` found `wiki/areas/startups/compliance-and-launch-checklist`.
+
+### Source And Repo Safety
+
+- Raw/source notes were preserved.
+- No private brain files entered Nexus OS.
+- No GBrain database, PGLite, cache, or `.gbrain` state entered Nexus OS.
+- Nexus OS fallback helpers were not changed or removed.
+
+### Recommended Next Phase
+
+Phase 1H should run the first source-grounded weekly startup review: choose one validation track, use the customer-discovery playbook, capture raw evidence, update the dashboard, and re-import keyword-only.
