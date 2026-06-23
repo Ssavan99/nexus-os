@@ -856,3 +856,118 @@ Keyword searches succeeded for all requested safe terms:
 ### Recommended Manual Import
 
 The vault is ready for a 3-4 hour manual note-import session. Capture quickly using `inbox/how-to-add-notes.md`, leave messy material in `inbox/` or the appropriate `raw/sources/` folder, and defer synthesis into `wiki/` until after capture. Run another keyword-only import after the session so GBrain can index the added Markdown.
+
+## Phase 1E: Startup Synthesis Pass
+
+Date: 2026-06-22 CDT
+
+Scope: re-index the updated private Markdown/Obsidian brain and create the first durable startup synthesis pages under the private vault's `wiki/areas/startups/` folder. No embeddings, API keys, watch mode, remote HTTP, OAuth, Hermes, or OpenClaw setup was run.
+
+### Preflight
+
+- Nexus OS repo root: `/Users/ssavan99/repos/nexus-os`
+- Initial Nexus OS repo status: clean
+- GBrain version: `gbrain 0.42.38.0`
+- `gbrain doctor --json` completed with status `warnings`, health score 95, and brain checks score 100. The reported issue was a DB connection warning while a local `gbrain serve` process held the PGLite lock.
+- Existing Nexus tests passed before the import: 6 tests, `OK`.
+- Private vault path: `/Users/ssavan99/Desktop/Personal-Obsidian`
+- The private vault resolved outside Nexus OS and outside `/Users/ssavan99/repos`.
+- The private vault was not a git repository, and git was not initialized.
+
+### Initial Snapshot
+
+- Markdown files before synthesis: 61
+- The vault contained the expected `raw/`, `inbox/`, and `wiki/` structure.
+- No private note contents were copied into this public repo.
+
+### First Keyword-Only Re-Import
+
+The first import attempt timed out on the PGLite lock because an active `gbrain serve` process was running. That serving process was stopped gracefully, then the import was rerun.
+
+Exact import command:
+
+```sh
+/Users/ssavan99/.bun/bin/gbrain import /Users/ssavan99/Desktop/Personal-Obsidian --no-embed
+```
+
+Result:
+
+- 61 Markdown files found.
+- 55 pages imported.
+- 6 unchanged pages skipped.
+- 200 chunks created.
+- 0 errors.
+- No embeddings generated.
+
+Warnings:
+
+- Several large source notes exceeded GBrain's content-sanity warning threshold.
+- A few imported pages shared content hashes with previously imported paths but had different frontmatter IDs, so GBrain indexed both.
+- No raw/source files were split, moved, deleted, or rewritten.
+
+### Startup Search Check
+
+Safe high-level searches were run for startup-related terms. Broad startup and company-brain terms returned results. Some specific idea phrases did not return results before the synthesis pages existed, which was expected because the source notes used different labels or did not yet contain those exact terms.
+
+### Startup Pages Created
+
+Created six private-vault synthesis pages:
+
+```text
+wiki/areas/startups/index.md
+wiki/areas/startups/convenience-store-platform.md
+wiki/areas/startups/civil-engineering-platform.md
+wiki/areas/startups/ai-interactive-story-game-platform.md
+wiki/areas/startups/open-questions.md
+wiki/areas/startups/next-actions.md
+```
+
+The pages intentionally separate raw ideas from durable conclusions. The civil-engineering page was marked as a source gap because no direct civil-engineering source note was found in the current vault during this pass.
+
+`wiki/log.md` was appended with a short "First startup synthesis pass" entry and a note that job/career notes remain incomplete and can be added incrementally later.
+
+Sensitive credential-like details found in one raw resource note were not copied into the synthesis pages.
+
+### Second Keyword-Only Re-Import
+
+After the wiki updates, the private vault contained 67 Markdown files.
+
+Exact import command:
+
+```sh
+/Users/ssavan99/.bun/bin/gbrain import /Users/ssavan99/Desktop/Personal-Obsidian --no-embed
+```
+
+Result:
+
+- 67 Markdown files found.
+- 7 pages imported.
+- 60 unchanged pages skipped.
+- 7 chunks created.
+- 0 errors.
+- No embeddings generated.
+
+### Search Verification
+
+Post-update search verification succeeded:
+
+- `First startup synthesis pass` found the vault log and startup index.
+- Slug searches for `convenience-store-platform`, `civil-engineering-platform`, and `ai-interactive-story-game-platform` found the startup index links.
+- Title searches found the individual idea pages:
+  - `Convenience Store Platform`
+  - `Civil Engineering Platform`
+  - `AI Interactive Story-Game Platform`
+- `Startup Open Questions` found `wiki/areas/startups/open-questions`.
+- `Startup Next Actions` found `wiki/areas/startups/next-actions`.
+
+### Source And Repo Safety
+
+- Raw/source notes were preserved.
+- No raw notes were deleted, moved, renamed, or intentionally modified.
+- The private vault remained outside Nexus OS and outside `/Users/ssavan99/repos`.
+- No private vault files, GBrain database files, PGLite files, cache files, or `.gbrain` state entered Nexus OS.
+- Nexus OS fallback helpers were not changed or removed.
+
+### Recommended Next Step
+
+Use the new startup synthesis pages as a review surface. The most useful next step is to add direct raw notes for the civil-engineering direction, then run a small validation sprint around one primary startup idea before another keyword-only GBrain import.
