@@ -115,3 +115,9 @@ Reason: Secure MCP Tunnel is the safer local-first path because it avoids public
 Verification: the ChatGPT Secure MCP Tunnel path succeeded against a disposable GBrain state, using the `gbrain-disposable-stdio` tunnel-client profile and a stdio command scoped with `GBRAIN_HOME=/Users/ssavan99/repos/nexus-gbrain-chatgpt-state`.
 
 Boundary: the test used fake disposable Markdown content only. The real private vault, real `/Users/ssavan99/.gbrain` state, GBrain HTTP mode, public tunnels, embeddings, real-brain import/sync/watch, OAuth/token values, and Claude Code setup were not used.
+
+## [2026-06-23] Phase 2B.11 Verification: ChatGPT Read-Only GBrain Connector
+
+Verification: the daily ChatGPT memory path should use the minimal read-only wrapper at `/Users/ssavan99/MCPs/nexus-gbrain-readonly-mcp`, connected as `Nexus GBrain Readonly Memory` through Secure MCP Tunnel. The wrapper exposes only `get_brain_identity` and `search`, and delegates search to the existing local GBrain CLI/index.
+
+Decision: do not use raw GBrain MCP as the daily ChatGPT connector because it exposed write/admin/destructive tools. The raw private vault was not modified, and no GBrain HTTP mode, public tunnel, embeddings, real-brain import/sync/watch, or write tools were used.
