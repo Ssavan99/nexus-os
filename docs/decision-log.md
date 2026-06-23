@@ -69,3 +69,9 @@ This keeps the system simpler:
 Observation: Phase 1B confirmed that GBrain CLI commands work when `/Users/ssavan99/.bun/bin` is added to `PATH`, but the configured Codex MCP server uses the bare command `gbrain serve`. In the fresh Codex shell used for Phase 1B, `gbrain` was not resolvable without a PATH override, and GBrain MCP tools were not visible to the session.
 
 Decision: do not proceed to full private brain import as a completed MCP integration milestone until a fresh Codex session can launch GBrain MCP and verify `get_brain_identity`, `list_skills`, and MCP search. Keep the integration local/stdio and no-token for now.
+
+## [2026-06-11] Workflow Decision: Raw, Inbox, And Wiki Capture Flow
+
+Decision: organize the private brain around three simple stages: `raw/` for immutable or minimally edited sources, `inbox/` for fast and messy capture, and `wiki/` for cleaned, synthesized, durable knowledge.
+
+Broad areas, reusable concepts, durable decisions, open questions, summaries, people, and organizations live under `wiki/` when useful. During large import sessions, capture speed takes priority over detailed organization; GBrain and agent workflows can help synthesize material later without duplicating memory infrastructure in Nexus OS.

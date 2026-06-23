@@ -745,3 +745,114 @@ Blockers:
 - No blocker for keyword-only CLI or MCP search.
 - `list_skills` remains unavailable until a skills directory is explicitly configured; that is outside this smoke-test scope.
 - The current session's MCP transport is closed after the required CLI cross-check and will be restored by starting a fresh Codex session.
+
+## Phase 1D: Private Brain Structure Bootstrap
+
+Date: 2026-06-11 CDT
+
+Scope: create the missing private Obsidian/Markdown brain structure and starter guidance before a manual note-import session. No existing vault file was overwritten, moved, renamed, or deleted.
+
+### Private Vault And Preflight
+
+- Private vault path: `/Users/ssavan99/Desktop/Personal-Obsidian`
+- The resolved path was outside Nexus OS and outside `/Users/ssavan99/repos`.
+- The vault contained an Obsidian configuration and was not a Git repository.
+- Git was not initialized in the private vault.
+- GBrain version: `gbrain 0.42.38.0`
+- `gbrain doctor --json` completed with health score 95 and brain checks score 100. Its only reported issue was the expected connection warning while active GBrain MCP processes held the PGLite lock.
+- Existing Nexus tests passed before the bootstrap: 6 tests, `OK`.
+
+### Folders Created
+
+Only missing folders were created:
+
+```text
+raw/
+raw/sources/
+raw/sources/articles/
+raw/sources/documents/
+raw/sources/journals/
+raw/sources/meetings/
+raw/sources/instagram/
+raw/sources/youtube/
+raw/sources/ideas/
+raw/sources/transcripts/
+raw/assets/
+wiki/
+wiki/areas/
+wiki/areas/personal/
+wiki/areas/career/
+wiki/areas/ai-learning/
+wiki/areas/startups/
+wiki/areas/projects/
+wiki/concepts/
+wiki/decisions/
+wiki/questions/
+wiki/summaries/
+wiki/people/
+wiki/organizations/
+inbox/
+inbox/loose-notes/
+```
+
+### Starter Files Created
+
+Only missing files were created:
+
+```text
+wiki/index.md
+wiki/log.md
+wiki/_schema.md
+inbox/README.md
+raw/README.md
+wiki/README.md
+inbox/how-to-add-notes.md
+```
+
+The schema defines `raw/` as immutable or minimally edited sources, `inbox/` as messy unprocessed notes, and `wiki/` as cleaned and synthesized durable knowledge. The import guide routes common capture types and recommends capturing first rather than over-organizing.
+
+Markdown file count:
+
+- Before: 3
+- After: 10
+
+### Keyword-Only Import
+
+The active `gbrain serve` processes were stopped gracefully so the CLI could acquire the PGLite database connection.
+
+Exact import command:
+
+```sh
+/Users/ssavan99/.bun/bin/gbrain import /Users/ssavan99/Desktop/Personal-Obsidian --no-embed
+```
+
+Result:
+
+- 10 Markdown files found.
+- 7 new pages imported.
+- 3 unchanged pages skipped.
+- 7 chunks created.
+- 0 errors.
+- No embeddings generated.
+
+### Search Verification
+
+Keyword searches succeeded for all requested safe terms:
+
+- `raw sources` found `raw/readme`.
+- `loose-notes` found `inbox/readme`.
+- `human navigation page` found `wiki/index`.
+- `chronological log` found `wiki/log`.
+
+### Source And Repo Safety
+
+- All vault writes were limited to the requested missing folders and starter files.
+- Existing private files were not overwritten, moved, renamed, or deleted.
+- The private vault remains outside Nexus OS and outside `/Users/ssavan99/repos`.
+- No private vault files or GBrain database artifacts entered Nexus OS.
+- Embeddings and API keys remain deferred.
+- No `gbrain embed`, `gbrain sync`, watch mode, remote HTTP, OAuth, Hermes, or OpenClaw configuration was run.
+
+### Recommended Manual Import
+
+The vault is ready for a 3-4 hour manual note-import session. Capture quickly using `inbox/how-to-add-notes.md`, leave messy material in `inbox/` or the appropriate `raw/sources/` folder, and defer synthesis into `wiki/` until after capture. Run another keyword-only import after the session so GBrain can index the added Markdown.
