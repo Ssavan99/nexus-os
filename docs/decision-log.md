@@ -103,3 +103,9 @@ Follow-up: `list_skills` reached the MCP server but returned a GBrain `storage_e
 Decision: evaluate ChatGPT MCP feasibility and safety before moving to Claude Code because the user explicitly requested this Phase 2 order change.
 
 Reason: ChatGPT is a remote OpenAI-hosted client, unlike local stdio MCP clients. Any GBrain connection for ChatGPT may require an HTTPS MCP endpoint, authentication, and possibly a tunnel, so remote exposure of the private brain requires a separate explicit approval before implementation.
+
+## [2026-06-23] Phase 2B.1 Planning: ChatGPT Connector Dry Run
+
+Decision: plan the first ChatGPT connector dry run around OpenAI Secure MCP Tunnel to a local GBrain MCP server, preferably using the existing GBrain stdio command before considering GBrain HTTP mode or a public tunnel.
+
+Reason: Secure MCP Tunnel is the safer local-first path because it avoids public inbound exposure and can forward MCP requests to a private stdio or HTTP MCP server. Any server start, tunnel start, token creation, OAuth configuration, connector creation, or use of the full private-brain index still requires separate explicit approval.
