@@ -109,3 +109,9 @@ Reason: ChatGPT is a remote OpenAI-hosted client, unlike local stdio MCP clients
 Decision: plan the first ChatGPT connector dry run around OpenAI Secure MCP Tunnel to a local GBrain MCP server, preferably using the existing GBrain stdio command before considering GBrain HTTP mode or a public tunnel.
 
 Reason: Secure MCP Tunnel is the safer local-first path because it avoids public inbound exposure and can forward MCP requests to a private stdio or HTTP MCP server. Any server start, tunnel start, token creation, OAuth configuration, connector creation, or use of the full private-brain index still requires separate explicit approval.
+
+## [2026-06-23] Phase 2B.6 Verification: Disposable ChatGPT Tunnel Smoke Test
+
+Verification: the ChatGPT Secure MCP Tunnel path succeeded against a disposable GBrain state, using the `gbrain-disposable-stdio` tunnel-client profile and a stdio command scoped with `GBRAIN_HOME=/Users/ssavan99/repos/nexus-gbrain-chatgpt-state`.
+
+Boundary: the test used fake disposable Markdown content only. The real private vault, real `/Users/ssavan99/.gbrain` state, GBrain HTTP mode, public tunnels, embeddings, real-brain import/sync/watch, OAuth/token values, and Claude Code setup were not used.

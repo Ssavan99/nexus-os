@@ -377,3 +377,16 @@ Secure MCP Tunnel -> GBrain stdio command -> disposable/test-only GBrain state f
 ```
 
 Move to current full-index testing only after the tunnel, connector discovery, permission settings, and tool list are proven safe.
+
+## Phase 2B.6 Result
+
+The disposable ChatGPT Secure MCP Tunnel smoke test succeeded with fake/test-only GBrain data.
+
+- Fake Markdown brain: `/Users/ssavan99/repos/nexus-gbrain-chatgpt-fake-brain`
+- Disposable GBrain state: `/Users/ssavan99/repos/nexus-gbrain-chatgpt-state/.gbrain`
+- Fake marker: `chatgpt-secure-tunnel-alpha`
+- tunnel-client profile: `gbrain-disposable-stdio`
+- Profile path: `/Users/ssavan99/.config/tunnel-client/gbrain-disposable-stdio.yaml`
+- Profile command: `env GBRAIN_HOME=/Users/ssavan99/repos/nexus-gbrain-chatgpt-state /Users/ssavan99/.bun/bin/gbrain serve`
+
+No real private vault content was exposed, no real `/Users/ssavan99/.gbrain` state was mutated, no `gbrain serve --http` path or public tunnel was used, and no real-brain import/sync/watch/embed step was run.
