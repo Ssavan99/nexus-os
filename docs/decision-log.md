@@ -97,3 +97,9 @@ Reason: this keeps Codex connected to shared memory while avoiding a duplicate N
 Verification: a fresh Codex session successfully launched the configured local GBrain MCP server with `/Users/ssavan99/.bun/bin/gbrain serve` over stdio. `get_brain_identity` returned the local PGLite-backed brain identity, and read-only MCP searches for startup dashboard, customer discovery, weekly startup review, and shared organizational brain queries returned results from the indexed private brain.
 
 Follow-up: `list_skills` reached the MCP server but returned a GBrain `storage_error` because no skills directory is configured on the server host. Treat this as a skills-publication configuration gap, not the earlier MCP transport failure.
+
+## [2026-06-23] Phase 2B Order Decision: ChatGPT Preflight Before Claude Code
+
+Decision: evaluate ChatGPT MCP feasibility and safety before moving to Claude Code because the user explicitly requested this Phase 2 order change.
+
+Reason: ChatGPT is a remote OpenAI-hosted client, unlike local stdio MCP clients. Any GBrain connection for ChatGPT may require an HTTPS MCP endpoint, authentication, and possibly a tunnel, so remote exposure of the private brain requires a separate explicit approval before implementation.

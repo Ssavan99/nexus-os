@@ -26,14 +26,13 @@ Goal: establish the local brain and connect it to GBrain safely.
 - Decide how the existing prototype helpers should coexist with GBrain during transition.
 - Keep a rollback path until GBrain is proven against real workflows.
 
-## Phase 2: Codex / Claude Code Connection
+## Phase 2: Agent Connections
 
 Goal: connect coding and writing agents to the same GBrain-backed memory.
 
-- Phase 2A status: in progress. Harden Codex's local GBrain MCP connection, document Codex operating rules, and verify that Codex uses GBrain memory without copying private brain files into Nexus OS.
-- Connect Codex to GBrain through MCP or the supported local interface.
-- Connect Claude Code to the same brain.
-- Connect ChatGPT via MCP when available and appropriate.
+- Phase 2A status: verified. Codex uses local GBrain MCP over stdio without copying private brain files into Nexus OS.
+- Phase 2B status: current preflight. Evaluate ChatGPT MCP feasibility and safety before any remote exposure.
+- Phase 2C status: planned. Connect Claude Code to the same GBrain-backed brain through local MCP or the supported local interface.
 - Verify shared memory means shared Markdown brain files plus GBrain index, not shared chat histories.
 - Document agent-specific operating instructions.
 
