@@ -15,7 +15,7 @@ Nexus OS is not a standalone replacement for GBrain. GBrain is the intended core
 Current client boundary:
 
 - Codex may use raw local GBrain MCP over stdio.
-- Claude Code is planned to use raw local GBrain MCP.
+- Claude Code uses raw local GBrain MCP via `~/.claude/settings.json` (global, all sessions).
 - ChatGPT must use the read-only wrapper connector only: `Nexus GBrain Readonly Memory` via `/Users/ssavan99/MCPs/nexus-gbrain-readonly-mcp`.
 - Claude chat / claude.ai should use a planned read-only remote connector only.
 - Do not expose raw GBrain MCP to ChatGPT or Claude chat unless GBrain later provides a verified read-only/native tool-filtered surface.
