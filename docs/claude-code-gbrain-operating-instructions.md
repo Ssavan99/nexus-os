@@ -15,23 +15,29 @@ Shared memory means shared Markdown brain files plus the GBrain index. It does n
 
 ## MCP Configuration
 
-Claude Code uses the global `~/.claude/settings.json` MCP configuration:
+Claude Code reads MCP servers from `~/.claude.json` (top-level `mcpServers`, user scope). Note: `~/.claude/settings.json` is for permissions/hooks/env only and does NOT load MCP servers — do not put `mcpServers` there.
 
 ```json
 {
   "mcpServers": {
     "gbrain": {
+      "type": "stdio",
       "command": "/Users/ssavan99/.bun/bin/gbrain",
-      "args": ["serve"],
-      "type": "stdio"
+      "args": ["serve"]
     }
   }
 }
 ```
 
-This is a global setting, so GBrain MCP is available in all Claude Code sessions regardless of working directory.
+The equivalent CLI command (when `claude` is on PATH) is:
 
-If GBrain MCP tools are unavailable, do not silently fall back to direct private-vault reads. Inspect the MCP server status and verify the absolute path to the gbrain binary.
+```sh
+claude mcp add gbrain --scope user -- /Users/ssavan99/.bun/bin/gbrain serve
+```
+
+User scope makes GBrain MCP available in all Claude Code sessions regardless of working directory. MCP servers load at startup, so restart Claude Code after changing this config.
+
+If GBrain MCP tools are unavailable, do not silently fall back to direct private-vault reads. Verify the `gbrain` entry and absolute binary path in `~/.claude.json`, then restart Claude Code.
 
 ## How Claude Code Should Use GBrain Memory
 
@@ -168,4 +174,4 @@ search weekly startup review
 search shared organizational brain
 ```
 
-If this fails with transport errors, record the exact failure and inspect `~/.claude/settings.json` to verify the absolute gbrain binary path.
+If this fails with transport errors, record the exact failure and inspect `~/.claude.json` (`mcpServers.gbrain`) to verify the absolute gbrain binary path, then restart Claude Code.

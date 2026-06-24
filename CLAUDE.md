@@ -17,30 +17,32 @@ Nexus OS is not a standalone replacement for GBrain. GBrain is the intended core
 Current client boundary:
 
 - Codex may use raw local GBrain MCP over stdio.
-- Claude Code uses raw local GBrain MCP via `~/.claude/settings.json` (global, all sessions).
+- Claude Code uses raw local GBrain MCP registered at user scope in `~/.claude.json` (global, all sessions).
 - ChatGPT must use the read-only wrapper connector only: `Nexus GBrain Readonly Memory` via `/Users/ssavan99/MCPs/nexus-gbrain-readonly-mcp`.
 - Claude chat / claude.ai should use a planned read-only remote connector only.
 - Do not expose raw GBrain MCP to ChatGPT or Claude chat unless GBrain later provides a verified read-only/native tool-filtered surface.
 
 ## GBrain MCP For Claude Code
 
-Claude Code connects to GBrain through the local stdio MCP server configured in `~/.claude/settings.json`:
+Claude Code connects to GBrain through a local stdio MCP server registered at **user scope** in `~/.claude.json` (top-level `mcpServers` key — this is where Claude Code reads MCP servers; `~/.claude/settings.json` is for permissions/hooks/env only and does NOT load MCP servers):
 
 ```json
 {
   "mcpServers": {
     "gbrain": {
+      "type": "stdio",
       "command": "/Users/ssavan99/.bun/bin/gbrain",
-      "args": ["serve"],
-      "type": "stdio"
+      "args": ["serve"]
     }
   }
 }
 ```
 
+The equivalent CLI command (if `claude` is on PATH) is `claude mcp add gbrain --scope user -- /Users/ssavan99/.bun/bin/gbrain serve`. User scope makes GBrain available in all Claude Code sessions and projects, matching Codex.
+
 Use the `gbrain` MCP tools for memory search and retrieval. Do not rebuild search or copy private content into this repo. See `docs/claude-code-gbrain-operating-instructions.md` for the full operating contract (allowed searches, write rules, prohibited commands).
 
-If GBrain MCP tools are unavailable, do not silently fall back to direct private-vault reads — verify the absolute path to the gbrain binary in `~/.claude/settings.json`.
+If GBrain MCP tools are unavailable, do not silently fall back to direct private-vault reads — verify the `gbrain` entry and absolute binary path in `~/.claude.json`, and restart Claude Code (MCP servers load at startup).
 
 Read these docs before making architecture changes:
 
