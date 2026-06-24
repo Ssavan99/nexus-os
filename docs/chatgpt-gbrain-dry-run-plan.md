@@ -2,13 +2,29 @@
 
 Phase: 2B.1 ChatGPT connector dry-run implementation plan.
 
-Status: planning only. No ChatGPT connector has been created, no tunnel has been started, no token or OAuth client has been created, and `gbrain serve --http` has not been run.
+Status: historical planning document. The daily ChatGPT path is now the read-only wrapper documented in `docs/chatgpt-readonly-connector.md`.
+
+Do not use raw GBrain MCP as the daily ChatGPT connector. The final daily path is:
+
+```text
+ChatGPT -> Secure MCP Tunnel -> tunnel-client -> nexus-gbrain-readonly-mcp -> GBrain CLI/search -> real GBrain index
+```
+
+Safe connector:
+
+- Name: `Nexus GBrain Readonly Memory`
+- Tools: `get_brain_identity`, `search`
+- Permission: `Always ask`
+- tunnel profile: `gbrain-readonly-wrapper-stdio`
+- MCP command: `/Users/ssavan99/.bun/bin/bun /Users/ssavan99/MCPs/nexus-gbrain-readonly-mcp/src/index.ts`
+
+Disable/delete raw connectors such as `GBrain Local Memory Read Test`, or any connector exposing `put_page`, `delete_page`, `add_link`, `add_tag`, `submit_job`, `sync_brain`, `schema_apply_mutations`, `sources_remove`, or similar write/admin/destructive tools.
 
 ## Goal
 
 Design the safest possible dry run for connecting ChatGPT Developer Mode to the existing GBrain-backed private brain, without changing the private vault or building duplicate Nexus OS memory infrastructure.
 
-The preferred path is OpenAI Secure MCP Tunnel to a local/private GBrain MCP server. The fallback is a public tunnel such as ngrok or Cloudflare Tunnel to GBrain's HTTP MCP server, but only if Secure MCP Tunnel is unavailable or incompatible.
+Historical note: the first dry run used OpenAI Secure MCP Tunnel to local GBrain MCP. That proved transport compatibility, but raw GBrain MCP exposed write/admin/destructive tools and is not safe for daily ChatGPT use. The final daily path uses the read-only wrapper instead.
 
 ## Confirmed Inputs
 
@@ -24,13 +40,17 @@ The preferred path is OpenAI Secure MCP Tunnel to a local/private GBrain MCP ser
 
 ## Key Finding: Stdio Versus HTTP
 
-Secure MCP Tunnel can forward to an MCP server reachable from the local machine by either stdio command or HTTP URL. That means the preferred dry run should first try GBrain's existing stdio MCP command through `tunnel-client --mcp-command`:
+Secure MCP Tunnel can forward to an MCP server reachable from the local machine by either stdio command or HTTP URL. The historical raw-GBrain dry run used:
 
 ```text
 /Users/ssavan99/.bun/bin/gbrain serve
 ```
 
-This avoids starting `gbrain serve --http` for the preferred path.
+This avoided starting `gbrain serve --http`, but it is not the preferred daily command. Use the read-only wrapper command instead:
+
+```text
+/Users/ssavan99/.bun/bin/bun /Users/ssavan99/MCPs/nexus-gbrain-readonly-mcp/src/index.ts
+```
 
 GBrain HTTP MCP is still relevant as a fallback because `gbrain --help` advertises:
 
@@ -41,7 +61,7 @@ serve --http [--port N]            HTTP MCP server with OAuth 2.1
   --public-url URL                 Public issuer URL (required behind proxy/tunnel)
 ```
 
-Use HTTP only if Secure MCP Tunnel cannot run a stdio MCP command with GBrain, or if ChatGPT's connector UI/tunnel flow requires an HTTP MCP target in this account.
+Do not use GBrain HTTP MCP for daily ChatGPT memory lookup. Use the read-only wrapper through Secure MCP Tunnel.
 
 Sources:
 
@@ -51,7 +71,7 @@ Sources:
 
 ## Path A: Preferred Secure MCP Tunnel
 
-Recommendation: use Secure MCP Tunnel unless GBrain or ChatGPT compatibility blocks it.
+Recommendation: use Secure MCP Tunnel with the read-only wrapper unless compatibility blocks it.
 
 Why:
 
@@ -66,25 +86,28 @@ Expected shape:
 1. ChatGPT connector uses a Tunnel connection.
 2. OpenAI-hosted tunnel endpoint queues MCP requests.
 3. Local `tunnel-client` long-polls over outbound HTTPS.
-4. `tunnel-client` invokes local GBrain over stdio with `/Users/ssavan99/.bun/bin/gbrain serve`.
-5. GBrain reads its existing local PGLite index and returns MCP tool results.
+4. `tunnel-client` invokes the read-only wrapper with `/Users/ssavan99/.bun/bin/bun /Users/ssavan99/MCPs/nexus-gbrain-readonly-mcp/src/index.ts`.
+5. The wrapper exposes only `get_brain_identity` and `search`, then delegates bounded search to the existing GBrain CLI/index.
 
 Approval-only command shape:
 
 ```bash
-export CONTROL_PLANE_API_KEY="<runtime key with Tunnels Read + Use>"
-
-tunnel-client init \
+/Users/ssavan99/MCPs/openai-tunnel-client/tunnel-client init \
   --sample sample_mcp_stdio_local \
-  --profile gbrain-local-stdio \
+  --profile gbrain-readonly-wrapper-stdio \
+  --force \
   --tunnel-id "<tunnel_id>" \
-  --mcp-command "/Users/ssavan99/.bun/bin/gbrain serve"
+  --mcp-command "/Users/ssavan99/.bun/bin/bun /Users/ssavan99/MCPs/nexus-gbrain-readonly-mcp/src/index.ts"
 
-tunnel-client doctor --profile gbrain-local-stdio --explain
-tunnel-client run --profile gbrain-local-stdio
+/Users/ssavan99/MCPs/openai-tunnel-client/tunnel-client doctor \
+  --profile gbrain-readonly-wrapper-stdio \
+  --explain
+
+/Users/ssavan99/MCPs/openai-tunnel-client/tunnel-client run \
+  --profile gbrain-readonly-wrapper-stdio
 ```
 
-Do not run these commands until the user explicitly approves the dry run and provides the required tunnel details.
+Export `CONTROL_PLANE_API_KEY` only in the local terminal. Do not paste it into ChatGPT, Codex, docs, `.env`, `.zshrc`, screenshots, or committed files. The key should have only Tunnels Read + Use.
 
 ## Path B: Fallback Public Tunnel To GBrain HTTP MCP
 
@@ -186,10 +209,9 @@ These commands must not be run during planning.
 Secure MCP Tunnel path:
 
 ```bash
-export CONTROL_PLANE_API_KEY="<runtime key with Tunnels Read + Use>"
-tunnel-client init --sample sample_mcp_stdio_local --profile gbrain-local-stdio --tunnel-id "<tunnel_id>" --mcp-command "/Users/ssavan99/.bun/bin/gbrain serve"
-tunnel-client doctor --profile gbrain-local-stdio --explain
-tunnel-client run --profile gbrain-local-stdio
+/Users/ssavan99/MCPs/openai-tunnel-client/tunnel-client init --sample sample_mcp_stdio_local --profile gbrain-readonly-wrapper-stdio --force --tunnel-id "<tunnel_id>" --mcp-command "/Users/ssavan99/.bun/bin/bun /Users/ssavan99/MCPs/nexus-gbrain-readonly-mcp/src/index.ts"
+/Users/ssavan99/MCPs/openai-tunnel-client/tunnel-client doctor --profile gbrain-readonly-wrapper-stdio --explain
+/Users/ssavan99/MCPs/openai-tunnel-client/tunnel-client run --profile gbrain-readonly-wrapper-stdio
 ```
 
 Fallback HTTP path:
@@ -232,7 +254,7 @@ Do not copy private brain content into Nexus OS to make a test state. Use fake d
 - Do not serve the private vault path directly over HTTP.
 - Do not point a web server or tunnel at `/Users/ssavan99/Desktop/Personal-Obsidian`.
 - Do not run import, sync, watch, embed, files upload, jobs, or write tools.
-- Prefer stdio GBrain behind Secure MCP Tunnel, because the only local target is the MCP command, not a file server.
+- Prefer the read-only wrapper behind Secure MCP Tunnel, because raw GBrain MCP exposes write/admin/destructive tools.
 - Confirm the ChatGPT connector tool list before asking any query.
 - If the tool list includes write/import/sync/watch/embed/job/file tools, stop before smoke testing.
 - Use short, targeted search prompts and avoid broad personal queries.
@@ -240,16 +262,16 @@ Do not copy private brain content into Nexus OS to make a test state. Use fake d
 
 ## Connector Name And Description
 
-Recommended connector name:
+Recommended daily connector name:
 
 ```text
-GBrain Local Memory Dry Run
+Nexus GBrain Readonly Memory
 ```
 
 Recommended description:
 
 ```text
-Private draft connector for testing read-only access to a local GBrain MCP server. Use only for explicit memory lookup smoke tests approved by the user.
+Private draft connector for controlled read/search access to local GBrain memory through the Nexus read-only wrapper.
 ```
 
 If testing a disposable state first, use:
@@ -296,11 +318,11 @@ Use these only after the connector is created and the tool list has been reviewe
 Initial safety checks:
 
 ```text
-Use the GBrain Local Memory Dry Run connector only. What tools are available? Do not retrieve private note content yet.
+Use the Nexus GBrain Readonly Memory connector only. List the available tools. Do not retrieve private note content yet.
 ```
 
 ```text
-Use the GBrain Local Memory Dry Run connector only. Get the brain identity or health summary if that tool is available. Keep the answer to counts and version metadata only.
+Use the Nexus GBrain Readonly Memory connector only. Get the brain identity or health summary if that tool is available. Keep the answer to counts and version metadata only.
 ```
 
 Disposable-state search, if using fake test data:
@@ -312,19 +334,19 @@ Use the GBrain Disposable Test Memory connector only. Search for "nexus-test-phr
 Full-index searches, only if explicitly approved:
 
 ```text
-Use the GBrain Local Memory Dry Run connector only. Search for "startup-dashboard" and return only result titles/slugs, not note text.
+Use the Nexus GBrain Readonly Memory connector only. Search for "startup-dashboard" and return only result titles/slugs, not note text.
 ```
 
 ```text
-Use the GBrain Local Memory Dry Run connector only. Search for "customer discovery playbook" and return only result titles/slugs, not note text.
+Use the Nexus GBrain Readonly Memory connector only. Search for "customer discovery playbook" and return only result titles/slugs, not note text.
 ```
 
 ```text
-Use the GBrain Local Memory Dry Run connector only. Search for "weekly startup review" and return only result titles/slugs, not note text.
+Use the Nexus GBrain Readonly Memory connector only. Search for "weekly startup review" and return only result titles/slugs, not note text.
 ```
 
 ```text
-Use the GBrain Local Memory Dry Run connector only. Search for "shared organizational brain" and return only result titles/slugs, not note text.
+Use the Nexus GBrain Readonly Memory connector only. Search for "shared organizational brain" and return only result titles/slugs, not note text.
 ```
 
 Stop if ChatGPT returns large private snippets, asks for broader permission than expected, or exposes unexpected write-capable tools.

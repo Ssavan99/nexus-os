@@ -2,7 +2,15 @@
 
 Phase: 2B ChatGPT MCP feasibility and safety preflight.
 
-Status: planning only. Do not expose GBrain to ChatGPT until the user explicitly approves a separate implementation step.
+Status: superseded for daily use by `docs/chatgpt-readonly-connector.md`.
+
+Daily ChatGPT access must use:
+
+```text
+ChatGPT -> Secure MCP Tunnel -> tunnel-client -> nexus-gbrain-readonly-mcp -> GBrain CLI/search -> real GBrain index
+```
+
+Do not use raw GBrain MCP as the daily ChatGPT connector. Raw GBrain MCP exposed write/admin/destructive tools. Disable/delete `GBrain Local Memory Read Test` or any connector exposing tools such as `put_page`, `delete_page`, `add_link`, `add_tag`, `submit_job`, `sync_brain`, `schema_apply_mutations`, or `sources_remove`.
 
 ## Current Local State
 
@@ -26,7 +34,7 @@ Codex can run GBrain locally over stdio:
 
 That keeps the MCP transport local to the same machine and does not require a public URL, tunnel, bearer token, OAuth flow, or API key.
 
-ChatGPT is different because ChatGPT runs as an OpenAI-hosted product and cannot directly spawn a local stdio process on this machine. The official ChatGPT Apps connection flow expects a remote MCP server reachable over HTTPS, with the connector URL pointing at the server's public `/mcp` endpoint. ChatGPT developer mode currently supports SSE and streaming HTTP for remote MCP apps.
+ChatGPT is different because ChatGPT runs as an OpenAI-hosted product and cannot directly spawn a local stdio process on this machine. The daily route uses OpenAI Secure MCP Tunnel so ChatGPT can reach a local read-only MCP wrapper without exposing raw GBrain MCP or starting `gbrain serve --http`.
 
 Sources:
 
@@ -52,42 +60,37 @@ serve --http [--port N]            HTTP MCP server with OAuth 2.1
 
 ## Feasibility Conclusion
 
-GBrain appears to support an HTTP MCP mode that could be suitable for ChatGPT only after a separate, approved exposure/auth design.
+GBrain supports raw stdio and HTTP MCP modes, but raw GBrain MCP is not safe for daily ChatGPT use because it exposes write/admin/destructive tools.
 
-The minimum ChatGPT-compatible shape is expected to be:
+The safe ChatGPT-compatible shape is:
 
-- A GBrain HTTP MCP server, likely started with `gbrain serve --http`.
-- A reachable HTTPS URL for ChatGPT.
-- A `/mcp` endpoint or endpoint shape accepted by ChatGPT connector setup.
-- A security model, preferably OAuth for third-party cloud access.
-- If behind a tunnel or reverse proxy, a correct `--public-url` issuer value.
+- `Nexus GBrain Readonly Memory` connector.
+- OpenAI Secure MCP Tunnel.
+- `gbrain-readonly-wrapper-stdio` tunnel profile.
+- MCP command: `/Users/ssavan99/.bun/bin/bun /Users/ssavan99/MCPs/nexus-gbrain-readonly-mcp/src/index.ts`
+- Wrapper tools only: `get_brain_identity`, `search`.
 
 This is not equivalent to the current safe Codex stdio setup.
 
 ## Does ChatGPT Require These?
 
-Remote HTTP: yes, for ChatGPT. Official docs describe ChatGPT connectors as remote MCP servers reachable over HTTPS.
+Remote HTTP: not from GBrain directly for the daily path. ChatGPT reaches the local wrapper through Secure MCP Tunnel.
 
 Auth token: possibly. GBrain supports bearer-token remote wiring, but bearer tokens are described by GBrain as simple, long-lived, and full-access. That is not the safest first choice for exposing a private brain to a cloud product.
 
-OAuth: likely recommended if exposing GBrain to ChatGPT. ChatGPT supports OAuth, no authentication, and mixed authentication in developer mode, while GBrain HTTP mode advertises OAuth 2.1 options. OAuth should be treated as the safer path for any non-local exposure.
+OAuth: not part of the current daily wrapper path.
 
-Tunnel: likely required for local-first testing unless GBrain is deployed to a real HTTPS host. Official OpenAI docs mention Secure MCP Tunnel for private MCP servers, or tools such as ngrok or Cloudflare Tunnel for exposing a local server. No tunnel should be installed or started without explicit approval.
+Tunnel: yes. Use OpenAI Secure MCP Tunnel, not public tunnel tools.
 
-API keys: not for GBrain keyword search itself. Secure MCP Tunnel or other hosted tooling may have its own account/auth requirements, but this preflight does not require adding OpenAI API keys, embedding keys, or provider keys.
+API keys: no OpenAI/GBrain embedding keys are needed for keyword search. The Secure MCP Tunnel runtime key must be exported locally only, must have Tunnels Read + Use, and must never be pasted into ChatGPT, Codex, docs, `.env`, `.zshrc`, screenshots, or committed files.
 
 ## Safest Local-First Approach
 
-1. Keep Codex using local stdio MCP as the verified baseline.
-2. Treat ChatGPT connection as a separate remote-access project, not a continuation of local MCP.
-3. Before starting any HTTP server, decide the exact auth model:
-   - preferred: OAuth 2.1 with least-privilege read-only scopes if GBrain supports enforcing them for the needed tools;
-   - avoid: no-auth exposure;
-   - avoid unless explicitly accepted: bearer token exposure to ChatGPT.
-4. Prefer an outbound-only private tunnel such as Secure MCP Tunnel over a public ngrok/Cloudflare URL if available for the user's ChatGPT/OpenAI account.
-5. If testing proceeds, expose only read/search tools at first. Do not expose write, import, sync, watch, embed, files, jobs, or shell-like capabilities.
-6. Confirm the connector's tool list in ChatGPT before using it in a chat.
-7. Keep permission settings at the most conservative level, such as always asking before tool calls where available.
+1. Keep Codex using raw local GBrain stdio MCP.
+2. Use the read-only wrapper for ChatGPT.
+3. Keep ChatGPT permission set to `Always ask`.
+4. Expose only `get_brain_identity` and `search`.
+5. Do not expose raw GBrain tools to ChatGPT.
 
 ## Security Risks
 
@@ -117,30 +120,27 @@ Before implementation, check these manually in ChatGPT:
 
 ## Recommended Smoke Tests If Later Approved
 
-Run these only after explicit approval to start HTTP serving and configure a private ChatGPT connector:
+Use these with `Nexus GBrain Readonly Memory`:
 
-1. Start GBrain HTTP MCP locally with the approved auth and URL settings.
-2. Verify locally that the HTTP endpoint advertises only intended read/search tools.
-3. Create the ChatGPT connector as a private draft.
-4. Confirm ChatGPT shows the expected tool list before using the connector.
-5. Run read-only identity or health check if exposed.
-6. Search for a non-sensitive marker query first.
-7. Search for the same safe startup workflow queries used in Codex Phase 2A:
-   - `startup-dashboard`
-   - `customer discovery playbook`
-   - `weekly startup review`
-   - `shared organizational brain`
-8. Confirm results are summarized without copying broad private content into Nexus OS.
-9. Confirm no write/import/sync/watch/embed/job/file tools are callable from ChatGPT.
-10. Disconnect immediately after the test unless there is a separate approval to keep it available.
+```text
+Use the Nexus GBrain Readonly Memory connector only. List the available tools. Do not retrieve private note content yet.
+```
+
+```text
+Use the Nexus GBrain Readonly Memory connector only. Search for "startup-dashboard" and return only result titles/slugs, not note text.
+```
+
+```text
+Use the Nexus GBrain Readonly Memory connector only. Search for "customer discovery playbook" and return only result titles/slugs, not note text.
+```
 
 ## Rollback And Disconnect Plan
 
 - Disable or delete the connector in ChatGPT Settings -> Apps & Connectors.
-- Stop the local `gbrain serve --http` process.
+- Stop `tunnel-client run --profile gbrain-readonly-wrapper-stdio`.
 - Stop and remove any approved tunnel process.
 - Revoke any generated OAuth client or bearer token.
-- Remove any local config that was added only for the ChatGPT test.
+- Disable/delete raw GBrain ChatGPT connectors.
 - Re-run Codex local stdio smoke tests to confirm Phase 2A still works.
 - Record the outcome in `docs/decision-log.md`.
 
@@ -149,6 +149,7 @@ Run these only after explicit approval to start HTTP serving and configure a pri
 - Do not expose the private vault over HTTP.
 - Do not run `gbrain serve --http` without explicit approval.
 - Do not create a public tunnel without explicit approval.
+- Do not use raw GBrain MCP for the daily ChatGPT connector.
 - Do not use no-auth exposure for the private brain.
 - Do not create bearer tokens or OAuth clients during preflight.
 - Do not paste tokens, secrets, private URLs, or raw private notes into ChatGPT.

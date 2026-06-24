@@ -121,3 +121,9 @@ Boundary: the test used fake disposable Markdown content only. The real private 
 Verification: the daily ChatGPT memory path should use the minimal read-only wrapper at `/Users/ssavan99/MCPs/nexus-gbrain-readonly-mcp`, connected as `Nexus GBrain Readonly Memory` through Secure MCP Tunnel. The wrapper exposes only `get_brain_identity` and `search`, and delegates search to the existing local GBrain CLI/index.
 
 Decision: do not use raw GBrain MCP as the daily ChatGPT connector because it exposed write/admin/destructive tools. The raw private vault was not modified, and no GBrain HTTP mode, public tunnel, embeddings, real-brain import/sync/watch, or write tools were used.
+
+## [2026-06-23] Phase 2B.12 Documentation Audit: ChatGPT Wrapper Runbook
+
+Decision: document the daily ChatGPT connector as `Nexus GBrain Readonly Memory` using tunnel profile `gbrain-readonly-wrapper-stdio` and MCP command `/Users/ssavan99/.bun/bin/bun /Users/ssavan99/MCPs/nexus-gbrain-readonly-mcp/src/index.ts`.
+
+Reason: the earlier raw GBrain connector exposed destructive/admin tools, and the older wrapper command shape using `cd ... && bun run start` exited under `tunnel-client`. The safe daily ChatGPT path is the read-only wrapper only; Codex and planned Claude Code remain local raw GBrain MCP clients, while Claude chat / claude.ai should use a future read-only remote connector.

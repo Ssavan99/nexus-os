@@ -31,8 +31,9 @@ Goal: establish the local brain and connect it to GBrain safely.
 Goal: connect coding and writing agents to the same GBrain-backed memory.
 
 - Phase 2A status: verified. Codex uses local GBrain MCP over stdio without copying private brain files into Nexus OS.
-- Phase 2B status: current preflight. Evaluate ChatGPT MCP feasibility and safety before any remote exposure.
-- Phase 2C status: planned. Connect Claude Code to the same GBrain-backed brain through local MCP or the supported local interface.
+- Phase 2B status: verified. ChatGPT uses the `Nexus GBrain Readonly Memory` connector through Secure MCP Tunnel and the read-only wrapper at `/Users/ssavan99/MCPs/nexus-gbrain-readonly-mcp`; raw GBrain MCP is not safe for ChatGPT.
+- Phase 2C status: planned. Connect Claude Code to the same GBrain-backed brain through raw local MCP or the supported local interface.
+- Future Claude chat / claude.ai status: planned read-only remote connector only, not raw GBrain MCP, unless GBrain later provides a verified read-only native surface.
 - Verify shared memory means shared Markdown brain files plus GBrain index, not shared chat histories.
 - Document agent-specific operating instructions.
 

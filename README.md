@@ -15,6 +15,15 @@ The system has four main parts:
 
 Shared memory means shared brain files plus the GBrain index. It does not mean shared chat histories.
 
+Current agent connection posture:
+
+- Codex: raw local GBrain MCP over stdio.
+- Claude Code: planned raw local GBrain MCP.
+- ChatGPT: read-only wrapper only, via the `Nexus GBrain Readonly Memory` connector. See [docs/chatgpt-readonly-connector.md](docs/chatgpt-readonly-connector.md).
+- Claude chat / claude.ai: planned read-only remote connector only.
+
+Raw GBrain MCP must not be used as the daily ChatGPT connector because it exposes write/admin/destructive tools.
+
 See:
 
 - [docs/architecture.md](docs/architecture.md)
