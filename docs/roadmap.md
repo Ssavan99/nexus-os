@@ -32,8 +32,8 @@ Goal: connect coding and writing agents to the same GBrain-backed memory.
 
 - Phase 2A status: verified. Codex uses local GBrain MCP over stdio without copying private brain files into Nexus OS.
 - Phase 2B status: verified. ChatGPT uses the `Nexus GBrain Readonly Memory` connector through Secure MCP Tunnel and the read-only wrapper at `/Users/ssavan99/MCPs/nexus-gbrain-readonly-mcp`; raw GBrain MCP is not safe for ChatGPT.
-- Phase 2C status: active. Claude Code is wired to raw local GBrain MCP at user scope in `~/.claude.json` (global, all projects); verified the server lists 89 tools over stdio. Operating instructions at `docs/claude-code-gbrain-operating-instructions.md`. In-session smoke test pending a Claude Code restart that loads the MCP.
-- Phase 2D status: planned. Claude chat / claude.ai will use an HTTP read-only filter proxy in front of `gbrain serve --http`, exposed via cloudflared tunnel. Exposes `get_brain_identity`, `search`, and `query` (hybrid). Plan at `docs/claude-chat-gbrain-plan.md`.
+- Phase 2C status: verified. Claude Code uses raw local GBrain MCP at user scope in `~/.claude.json` (global, all projects); a restarted session loaded all 89 `mcp__gbrain__*` tools and `get_brain_identity` returned the local brain. Operating instructions at `docs/claude-code-gbrain-operating-instructions.md`.
+- Phase 2D status: in progress. Claude chat / claude.ai uses GBrain's **native** `serve --http` (OAuth 2.1) with a `read`-scoped client — no custom proxy. Read-only enforcement verified locally (write tools rejected with `insufficient_scope`). Public exposure (Cloudflare tunnel + connector) and the always-on rollout are phased for $0→minimal cost given the PGLite single-writer constraint. Plan + runbook at `docs/claude-chat-gbrain-plan.md`.
 - Verify shared memory means shared Markdown brain files plus GBrain index, not shared chat histories.
 - Document agent-specific operating instructions.
 

@@ -127,3 +127,30 @@ Decision: do not use raw GBrain MCP as the daily ChatGPT connector because it ex
 Decision: document the daily ChatGPT connector as `Nexus GBrain Readonly Memory` using tunnel profile `gbrain-readonly-wrapper-stdio` and MCP command `/Users/ssavan99/.bun/bin/bun /Users/ssavan99/MCPs/nexus-gbrain-readonly-mcp/src/index.ts`.
 
 Reason: the earlier raw GBrain connector exposed destructive/admin tools, and the older wrapper command shape using `cd ... && bun run start` exited under `tunnel-client`. The safe daily ChatGPT path is the read-only wrapper only; Codex and planned Claude Code remain local raw GBrain MCP clients, while Claude chat / claude.ai should use a future read-only remote connector.
+
+## [2026-06-24] Phase 2C Verification: Claude Code Uses Raw Local GBrain MCP
+
+Verification: Claude Code connects to the local stdio GBrain MCP and a restarted session loaded all 89 `mcp__gbrain__*` tools; `get_brain_identity` returned the local PGLite brain. Full local raw access, matching Codex.
+
+Decision: register the server at user scope in `~/.claude.json` (top-level `mcpServers`), NOT `~/.claude/settings.json`. Claude Code reads MCP servers from `~/.claude.json` / project `.mcp.json`; settings.json only handles permissions/hooks/env and silently ignores an `mcpServers` block (this was the initial misconfiguration). MCP servers load at startup, so a restart is required after config changes.
+
+## [2026-06-24] Phase 2D Decision: Claude Chat Uses GBrain Native OAuth `read` Scope, Not A Custom Wrapper
+
+Decision: claude.ai connects to GBrain through the native `gbrain serve --http` (OAuth 2.1) with a `read`-scoped client, rather than a bespoke read-only wrapper like the ChatGPT path.
+
+Reason: GBrain enforces an OAuth scope hierarchy server-side (`read → write → admin`, plus `sources_admin`/`agent` siblings; `src/core/scope.ts`, enforced at `src/commands/serve-http.ts:1496`). ~48 tools default to `read`; 41 require elevated scopes. A `read` token is hard-blocked from every mutating tool — this makes the custom HTTP filter proxy (the earlier Phase 2D design) unnecessary. The ChatGPT wrapper is retained only because its tunnel is OpenAI-specific; it is not reused here.
+
+Verification (local, 2026-06-24): registered a `read`-scoped `client_credentials` OAuth client, minted a token (granted `scope: read`), and against `serve --http` on localhost confirmed `search` (read) succeeds while `put_page` (write) is rejected with `{"error":"insufficient_scope","message":"Operation put_page requires 'write' scope","your_scopes":["read"]}`. The throwaway test client was revoked afterward.
+
+Security posture: cloud surface gets `read` only (server-enforced, not convention). Raw stdio GBrain MCP stays local-only (Codex, Claude Code) and is never tunneled. Note: GBrain's HTTP `tools/list` returns all tools regardless of scope (enforcement is at call time), so claude.ai will display write tools but every call is rejected — a cosmetic wrinkle, not a security gap.
+
+## [2026-06-24] Phase 2D Constraint: PGLite Single-Writer Lock Shapes The Always-On Design
+
+Observation: the brain runs on PGLite (embedded). PGLite acquires an exclusive file lock for a process's lifetime (`src/core/pglite-engine.ts:217`; error "Could not acquire PGLite lock"). A long-lived `serve --http` holds that lock, so concurrent CLI ops time out ("Timed out waiting for PGLite lock"). This conflicts with keeping always-on local stdio agents against the same brain.
+
+Decision (cost-driven, user goal: $0 now, robust always-on eventually): phase the rollout.
+- 2D.1 (now, $0): on-demand `serve --http` + quick Cloudflare tunnel for validation; no local-agent changes.
+- 2D.2 (durable, ~$0): one `serve --http` as the brain's sole owner under macOS launchd; local agents switch to `gbrain connect http://localhost:<port>/mcp` (full scope); claude.ai joins via a named Cloudflare tunnel (stable URL). Single-owner sidesteps the PGLite lock — no DB migration needed. Optional ~$8/yr domain for a clean hostname.
+- 2D.3 (optional, later, ~$5/mo or 1-time HW): move gbrain + Postgres (GBrain supports a generic `postgres` engine via `init --url`) to an always-on host (small VPS or home server) for 24/7 access independent of the Mac.
+
+Rejected for now: Supabase free tier as the always-on DB (pauses after ~1 week idle, 500 MB cap). Neon free serverless Postgres is the preferred $0 cloud DB option if/when 2D.3 is pursued.

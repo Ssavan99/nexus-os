@@ -1,85 +1,104 @@
-# Claude Chat GBrain Plan
+# Claude Chat (claude.ai) GBrain Plan
 
-Status: Phase 2D planned.
+Status: Phase 2D — read-only enforcement verified locally; public exposure (tunnel + connector) pending.
 
-This document covers how claude.ai (cloud-hosted Claude chat) will access the GBrain-backed brain safely.
+This document covers how claude.ai (cloud-hosted Claude chat) accesses the GBrain-backed brain safely.
 
 ## Why Claude Chat Cannot Use Raw GBrain MCP
 
-Claude chat runs as a cloud service. It cannot reach a local stdio process. Raw GBrain MCP also exposes destructive and admin tools (write, delete, sync, embed, autopilot, admin). The same boundary that protects ChatGPT applies here.
+Claude chat runs as a cloud service and cannot reach a local stdio process. Raw GBrain MCP also exposes destructive/admin tools. The same boundary that protects ChatGPT applies.
 
-## Chosen Approach: HTTP Read-Only Filter Proxy
+## Chosen Approach: GBrain Native HTTP + OAuth `read` Scope
 
-GBrain already ships with a native HTTP MCP server with OAuth 2.1:
+GBrain enforces an OAuth 2.1 scope hierarchy **server-side** — no custom wrapper or filter proxy is needed.
 
-```sh
-gbrain serve --http [--port N] [--public-url URL]
-```
+- Scopes: `read → write → admin` (+ `sources_admin`, `agent` siblings). Source: `gbrain/src/core/scope.ts`; enforced at `gbrain/src/commands/serve-http.ts:1496`.
+- ~48 of 89 tools default to `read`; 41 require `write`/`admin`/`sources_admin`/`agent`.
+- A `read`-scoped token is hard-blocked from every mutating tool.
 
-Rather than building a new stdio wrapper + tunnel client (as was done for ChatGPT), Phase 2D will use a thin HTTP read-only filter proxy that sits in front of `gbrain serve --http`. This approach:
+This supersedes the earlier Phase 2D design (a custom HTTP filter proxy mirroring the ChatGPT stdio wrapper). The ChatGPT wrapper at `/Users/ssavan99/MCPs/nexus-gbrain-readonly-mcp` stays as-is because its tunnel is OpenAI-specific; it is **not** reused here.
 
-- Reuses GBrain's native OAuth 2.1 infrastructure (no custom token management).
-- Exposes only safe read-only tools by intercepting the tool list before passing it to Claude.ai.
-- Works natively with Claude.ai's Remote MCP support (HTTP + OAuth 2.1).
-- Avoids building a new tunnel client from scratch.
+### Verified locally (2026-06-24)
 
-## Connection Path
+A `read`-scoped `client_credentials` client was registered and tested against `serve --http` on localhost:
+
+- `search` (read) → success.
+- `put_page` (write) → `{"error":"insufficient_scope","message":"Operation put_page requires 'write' scope","your_scopes":["read"]}`.
+
+The throwaway test client was revoked. Read-only is enforced by the server, not by convention.
+
+> Note: GBrain's HTTP `tools/list` returns all tools regardless of scope (enforcement is at call time). claude.ai will *display* write tools, but every write call is rejected. Cosmetic only.
+
+## Connection Architecture
 
 ```text
-Claude chat -> HTTPS -> read-only HTTP filter proxy -> gbrain serve --http -> GBrain index
+claude.ai (custom connector, OAuth 2.1)
+   -> HTTPS tunnel (Cloudflare)
+   -> gbrain serve --http  (--bind 0.0.0.0 --public-url <tunnel> [--enable-dcr])
+   -> OAuth: read-scoped client  -> GBrain index (read tools only)
 ```
 
-The filter proxy:
+## The PGLite Constraint (important)
 
-- Accepts MCP HTTP requests from Claude.ai.
-- Passes auth through to GBrain's OAuth 2.1 layer.
-- Overrides `tools/list` to return only the allowed read-only tools.
-- Passes `tools/call` through only for allowed tools; rejects all others.
-- Exposed via cloudflared tunnel or equivalent with a stable public URL.
+The brain runs on **PGLite** (embedded, single-writer). A long-lived `serve --http` holds an exclusive file lock for its lifetime, so other gbrain processes / CLI ops can time out ("Timed out waiting for PGLite lock"). This shapes how the server is run for an always-on setup — see the phased rollout below. The single-owner model (2D.2) sidesteps this without a DB migration.
 
-## Allowed Tools For Claude Chat
+## Phased Rollout (cost-optimized: $0 now → robust always-on later)
 
-The filter proxy will expose exactly:
+| Stage | What | Cost | Always-on |
+|---|---|---|---|
+| 2D.1 validate | On-demand `serve --http` + quick Cloudflare tunnel; existing PGLite; no local-agent changes | $0 | No (manual) |
+| 2D.2 durable | One `serve --http` as sole brain owner under macOS launchd; local agents (Codex, Claude Code) switch to `gbrain connect http://localhost:<port>/mcp` (full scope); **named** Cloudflare tunnel for a stable URL | $0 (opt. ~$8/yr domain) | Yes, while Mac awake |
+| 2D.3 independent | Move gbrain + **Postgres** (`init --url`) to a small VPS or home server | ~$5/mo or 1-time HW | Yes, 24/7 |
 
-- `get_brain_identity` — same as ChatGPT connector.
-- `search` — tsvector keyword search, same as ChatGPT connector.
-- `query` — hybrid RRF + semantic expansion search. This is strictly more powerful than `search` and is appropriate for claude.ai, which benefits from semantic relevance ranking.
+Cost notes: Cloudflare Tunnel is free (stable hostname ideally needs a domain on Cloudflare). Supabase free tier is a poor always-on DB (pauses ~1 week idle, 500 MB cap); Neon free serverless Postgres is the preferred $0 cloud DB if 2D.3 is pursued.
 
-The `query` tool is not exposed to ChatGPT (conservative first deployment). Claude chat is the first surface to expose it.
+## Runbook — 2D.1 Validation (do this first)
 
-## Why Not Reuse The ChatGPT Stdio Wrapper
+Claude drives local steps; 🔶 = user runs (outward-facing / secret-handling).
 
-The ChatGPT wrapper (`nexus-gbrain-readonly-mcp`) is a stdio MCP process bridged to ChatGPT via an OpenAI-specific tunnel client. Claude.ai uses a different protocol (HTTP MCP with OAuth 2.1), so the ChatGPT tunnel architecture does not transfer directly.
+1. **Register a read-only OAuth client** (local; only if not using DCR)
+   ```sh
+   gbrain auth register-client "claude-chat-readonly" --scopes read --grant-types client_credentials
+   ```
+   Save the client secret outside this public repo. Revoke with `gbrain auth revoke-client <client_id>`.
 
-However, the tool filtering logic and safety constraints from that wrapper are directly reusable in the HTTP proxy.
+2. 🔶 **Install the tunnel** (neither cloudflared nor ngrok is currently installed)
+   ```sh
+   brew install cloudflared
+   ```
 
-## Build Steps (When Ready)
+3. **Start the HTTP MCP server** (local)
+   ```sh
+   gbrain serve --http --port 3131 --bind 0.0.0.0 --public-url https://<tunnel-domain> --enable-dcr
+   ```
+   - `--bind 0.0.0.0` is required for the tunnel to reach it (default is 127.0.0.1).
+   - `--public-url` MUST equal the tunnel URL — it becomes the OAuth issuer in discovery metadata + token `iss` claim.
+   - `--enable-dcr` exposes `/register` so claude.ai can self-register via Dynamic Client Registration (DCR default scope is `read`). If handing claude.ai the pre-registered client from step 1 instead, DCR can stay off.
 
-1. Create `/Users/ssavan99/MCPs/nexus-gbrain-readonly-mcp-http` as a small Bun/Node HTTP server.
-2. On startup, spawn `gbrain serve --http` on a local port.
-3. Proxy all MCP HTTP requests to that local gbrain HTTP server.
-4. Filter `tools/list` to return only `get_brain_identity`, `search`, and `query`.
-5. Reject `tools/call` for any tool not in the allowed list.
-6. Expose the proxy over a cloudflared tunnel with a stable `--public-url`.
-7. Register the tunnel URL in Claude.ai as a Remote MCP connector.
+4. 🔶 **Open the tunnel**
+   ```sh
+   cloudflared tunnel --url http://localhost:3131
+   ```
+   Note the assigned `https://<...>.trycloudflare.com`, then restart step 3 with it as `--public-url`.
 
-## Alternative: Native GBrain Read-Only Mode
+5. 🔶 **Add the custom connector in claude.ai**
+   - Settings → Connectors → Add custom connector → remote MCP URL = `https://<tunnel>/mcp`.
+   - Complete the OAuth login/consent. Confirm only `read` scope is granted.
 
-If GBrain introduces a native read-only mode or tool-scope flag in a future version, replace this proxy with that native surface. Check `gbrain --help` and GBrain release notes before building the proxy.
+6. **Smoke test**
+   - Local: `gbrain auth test https://<tunnel>/mcp --token <token>`.
+   - From claude.ai: `search` / `query` / `get_page` → expect results.
+   - Negative (required): attempt `put_page` → expect `insufficient_scope`.
 
-## Security Constraints
+## Security Invariants
 
-- Never expose raw `gbrain serve --http` directly to Claude.ai without the filter layer.
-- The allowed tool list must be hardcoded in the proxy, not configurable at runtime.
-- The tunnel must use HTTPS only.
-- Rotate the cloudflared tunnel token if compromised.
-- Keep the public URL out of this public repo; store it in `.env`.
+- Cloud connector gets `read` scope only; never `write`/`admin`. Enforced server-side.
+- Client secret / tunnel token never committed to this public repo.
+- `--public-url` must match the tunnel origin (OAuth issuer correctness).
+- Raw stdio GBrain MCP stays local-only (Codex, Claude Code). Never tunneled.
+- Negative smoke test (write rejected) is a required acceptance criterion. ✅ verified locally.
 
-## Relationship To ChatGPT Connector
+## Open Items
 
-| Surface | Transport | Wrapper | Auth | Allowed Tools |
-|---|---|---|---|---|
-| ChatGPT | stdio + tunnel client | nexus-gbrain-readonly-mcp | OpenAI OAuth | search, get_brain_identity |
-| Claude chat | HTTP + cloudflared | nexus-gbrain-readonly-mcp-http | GBrain OAuth 2.1 | search, get_brain_identity, query |
-| Codex | stdio | raw gbrain serve | local | all tools |
-| Claude Code | stdio | raw gbrain serve | local | all tools |
+- DCR vs pre-registered client: confirm which claude.ai's connector flow expects (try DCR first; fall back to manual client_id/secret).
+- For 2D.2: launchd plist for `serve --http`; named Cloudflare tunnel; migrate local agents to `gbrain connect localhost`.
