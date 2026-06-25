@@ -154,3 +154,13 @@ Decision (cost-driven, user goal: $0 now, robust always-on eventually): phase th
 - 2D.3 (optional, later, ~$5/mo or 1-time HW): move gbrain + Postgres (GBrain supports a generic `postgres` engine via `init --url`) to an always-on host (small VPS or home server) for 24/7 access independent of the Mac.
 
 Rejected for now: Supabase free tier as the always-on DB (pauses after ~1 week idle, 500 MB cap). Neon free serverless Postgres is the preferred $0 cloud DB option if/when 2D.3 is pursued.
+
+## [2026-06-24] Phase 2D.1 Verification: claude.ai Connected Read-Only End-to-End
+
+Verification: claude.ai connected to GBrain's native `serve --http` over a Cloudflare quick tunnel and passed the acceptance test — a `search` returned brain results; a `put_page` was refused server-side with `insufficient_scope`. Read-only confirmed on the real surface, not just locally.
+
+Auth model (decided from observed claude.ai behavior): claude.ai's custom connector does **not** self-register against a server lacking a registration endpoint — it errors "Automatic client registration isn't supported … add an OAuth Client ID." So the working model is a **manually pre-registered public (PKCE) client, DCR off**: `register-client --scopes read --grant-types authorization_code --token-endpoint-auth-method none --redirect-uri https://claude.ai/api/mcp/auth_callback`. The user pastes the Client ID into the connector's Advanced/OAuth field (no secret). claude.ai's verified redirect URI is `https://claude.ai/api/mcp/auth_callback`.
+
+Security: DCR is kept OFF — confirmed that open DCR (`--enable-dcr`) does not clamp self-registered clients to `read` (oauth-provider.ts validates but does not downscope), so it must never be left exposed on a public tunnel. The Client ID is a public PKCE identifier, not a secret; the brain enforces `read` server-side regardless.
+
+Operational: quick-tunnel URLs are ephemeral and the server must run in a user-owned terminal (assistant background tasks get reaped mid-flow, dropping the tunnel). Helper script: `scripts/claude-chat-gbrain-tunnel.sh`. For always-on (2D.2): include `refresh_token` in the client grants, use a named Cloudflare tunnel (stable URL), and run the server under launchd as the single brain owner.

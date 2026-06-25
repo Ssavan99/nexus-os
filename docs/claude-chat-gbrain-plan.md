@@ -1,6 +1,6 @@
 # Claude Chat (claude.ai) GBrain Plan
 
-Status: Phase 2D — read-only enforcement verified locally; public exposure (tunnel + connector) pending.
+Status: Phase 2D.1 — VERIFIED. claude.ai is connected read-only to the GBrain brain over a Cloudflare quick tunnel; read works, write refused end-to-end. Always-on (2D.2) pending.
 
 This document covers how claude.ai (cloud-hosted Claude chat) accesses the GBrain-backed brain safely.
 
@@ -52,43 +52,53 @@ The brain runs on **PGLite** (embedded, single-writer). A long-lived `serve --ht
 
 Cost notes: Cloudflare Tunnel is free (stable hostname ideally needs a domain on Cloudflare). Supabase free tier is a poor always-on DB (pauses ~1 week idle, 500 MB cap); Neon free serverless Postgres is the preferred $0 cloud DB if 2D.3 is pursued.
 
-## Runbook — 2D.1 Validation (do this first)
+## Runbook — 2D.1 Validation (VERIFIED 2026-06-24)
 
-Claude drives local steps; 🔶 = user runs (outward-facing / secret-handling).
+This is the method that actually worked. claude.ai's connector does **not** support
+auto self-registration against a server with no registration endpoint — it shows
+"Automatic client registration isn't supported … add an OAuth Client ID." So we use
+a **manually pre-registered public (PKCE) read client with DCR off** (no secret),
+which is also the safer posture (open DCR does not clamp scope to `read`).
 
-1. **Register a read-only OAuth client** (local; only if not using DCR)
+1. **Register a read-only public client** (local, one-time; persists in the brain DB)
    ```sh
-   gbrain auth register-client "claude-chat-readonly" --scopes read --grant-types client_credentials
+   gbrain auth register-client "claude-chat-readonly" \
+     --scopes read \
+     --grant-types authorization_code \
+     --token-endpoint-auth-method none \
+     --redirect-uri https://claude.ai/api/mcp/auth_callback
    ```
-   Save the client secret outside this public repo. Revoke with `gbrain auth revoke-client <client_id>`.
+   - `--token-endpoint-auth-method none` = public client → **Client ID only, no secret**.
+   - `https://claude.ai/api/mcp/auth_callback` is claude.ai's verified redirect URI.
+   - The Client ID is not a secret (public PKCE client); the brain enforces `read` regardless.
+   - For durable use, also include `refresh_token` in `--grant-types` (this validation run used
+     `authorization_code` only, so claude.ai's token expires at the 3600s TTL and re-auths).
+   - Revoke with `gbrain auth revoke-client <client_id>`.
 
-2. 🔶 **Install the tunnel** (neither cloudflared nor ngrok is currently installed)
+2. 🔶 **Install the tunnel** (done: `brew install cloudflared`).
+
+3. **Bring up server + tunnel** — run the helper in a terminal that stays open:
    ```sh
-   brew install cloudflared
+   bash scripts/claude-chat-gbrain-tunnel.sh
    ```
+   It starts the Cloudflare quick tunnel, then `gbrain serve --http --bind 127.0.0.1
+   --public-url <tunnel>` (DCR off, `--bind 127.0.0.1` is fine because cloudflared runs
+   on the same host), and prints the connector URL. Logs: `/tmp/nexus-gbrain-http.log`,
+   `/tmp/nexus-cf.log`. (Note: GBrain logs MCP/auth requests to the `mcp_request_log`
+   DB table, not stdout — a quiet log file is normal.)
 
-3. **Start the HTTP MCP server** (local)
-   ```sh
-   gbrain serve --http --port 3131 --bind 0.0.0.0 --public-url https://<tunnel-domain> --enable-dcr
-   ```
-   - `--bind 0.0.0.0` is required for the tunnel to reach it (default is 127.0.0.1).
-   - `--public-url` MUST equal the tunnel URL — it becomes the OAuth issuer in discovery metadata + token `iss` claim.
-   - `--enable-dcr` exposes `/register` so claude.ai can self-register via Dynamic Client Registration (DCR default scope is `read`). If handing claude.ai the pre-registered client from step 1 instead, DCR can stay off.
+   > Run the server + tunnel in your **own** terminal, not via an assistant background
+   > task — those get reaped while you switch to the browser, dropping the tunnel
+   > mid-OAuth.
 
-4. 🔶 **Open the tunnel**
-   ```sh
-   cloudflared tunnel --url http://localhost:3131
-   ```
-   Note the assigned `https://<...>.trycloudflare.com`, then restart step 3 with it as `--public-url`.
+4. 🔶 **Add the custom connector in claude.ai**
+   - Add custom connector → URL = `https://<tunnel>/mcp`.
+   - Advanced / OAuth → **OAuth Client ID** = the id from step 1; **Client Secret** empty.
+   - Connect → approve consent (no passwords).
 
-5. 🔶 **Add the custom connector in claude.ai**
-   - Settings → Connectors → Add custom connector → remote MCP URL = `https://<tunnel>/mcp`.
-   - Complete the OAuth login/consent. Confirm only `read` scope is granted.
-
-6. **Smoke test**
-   - Local: `gbrain auth test https://<tunnel>/mcp --token <token>`.
-   - From claude.ai: `search` / `query` / `get_page` → expect results.
-   - Negative (required): attempt `put_page` → expect `insufficient_scope`.
+5. **Acceptance test (from claude.ai) — PASSED**
+   - Read (`search startup dashboard`) → returned results. ✅
+   - Write (`create page slug zzz-test`) → refused by server (`insufficient_scope`). ✅
 
 ## Security Invariants
 
@@ -96,7 +106,8 @@ Claude drives local steps; 🔶 = user runs (outward-facing / secret-handling).
 - Client secret / tunnel token never committed to this public repo.
 - `--public-url` must match the tunnel origin (OAuth issuer correctness).
 - Raw stdio GBrain MCP stays local-only (Codex, Claude Code). Never tunneled.
-- Negative smoke test (write rejected) is a required acceptance criterion. ✅ verified locally.
+- Negative test (write rejected) is a required acceptance criterion. ✅ verified end-to-end from claude.ai.
+- DCR stays OFF: open DCR (`--enable-dcr`) does NOT clamp self-registered clients to `read` (they may request `write`/`admin`), so it must not be left exposed on a public tunnel.
 
 ## Open Items
 
