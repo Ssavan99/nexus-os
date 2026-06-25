@@ -163,4 +163,24 @@ Auth model (decided from observed claude.ai behavior): claude.ai's custom connec
 
 Security: DCR is kept OFF — confirmed that open DCR (`--enable-dcr`) does not clamp self-registered clients to `read` (oauth-provider.ts validates but does not downscope), so it must never be left exposed on a public tunnel. The Client ID is a public PKCE identifier, not a secret; the brain enforces `read` server-side regardless.
 
-Operational: quick-tunnel URLs are ephemeral and the server must run in a user-owned terminal (assistant background tasks get reaped mid-flow, dropping the tunnel). Helper script: `scripts/claude-chat-gbrain-tunnel.sh`. For always-on (2D.2): include `refresh_token` in the client grants, use a named Cloudflare tunnel (stable URL), and run the server under launchd as the single brain owner.
+Operational: quick-tunnel URLs are ephemeral and the server must run in a user-owned terminal (assistant background tasks get reaped mid-flow, dropping the tunnel). Helper script: `scripts/claude-chat-gbrain-tunnel.sh`. For always-on (2D.2): include `refresh_token` in the client grants, use a stable tunnel, and run the server under launchd.
+
+## [2026-06-24] Incident + Decision: Migrate Brain PGLite → Local Postgres For Robust Always-On
+
+Incident: during the 2D.2 transition, a long-running PGLite `gbrain serve --http` was stopped with `pkill`. The unclean stop left the PGLite cluster in "in production" state; on next open, WASM Postgres crashed during WAL-replay recovery (`PGLite failed to initialize its WASM runtime … Aborted()`), taking the brain offline for ALL local clients. Root-caused via `pg_controldata` (cluster state) after ruling out lock/sandbox/process issues. Recovered with **zero data loss** by `pg_resetwal -f -D ~/.gbrain/brain.pglite` (using `postgresql@17`), which reset the crashed WAL and let PGLite reopen all 84 pages. The crashed dir was copied to `brain.pglite.crashed-bak-*` first.
+
+Decision: PGLite's single-writer model + corruption-on-unclean-stop is unacceptable for an always-on, internet-exposed server (a reboot, OOM, or launchd SIGKILL could re-trigger it). Migrated the brain to **local Postgres** (`postgresql@17` via `brew services`, free, on-device) with `pgvector` + `pg_trgm`:
+
+```sh
+gbrain migrate --to supabase --url postgresql://localhost:5432/gbrain
+```
+
+(`--to supabase` selects the generic `postgres` engine; the `--url` points at local Postgres.) Config auto-switched to `engine: postgres`; PGLite dir kept as backup. Verified: 84 pages, search, and concurrent reads (two at once — impossible under PGLite's lock). Local stdio agents (Codex, Claude Code) pick up the new engine transparently via `~/.gbrain/config.json`; no client reconfig needed.
+
+Reason: Postgres gives crash-safe recovery + concurrent connections, so the always-on HTTP server can run continuously alongside local agents without the lock contention or corruption risk that defined the PGLite era. This also lays the groundwork for 2D.3 (move Postgres to an always-on host).
+
+## [2026-06-24] Phase 2D.2 Done: Always-On claude.ai Connector (Postgres + ngrok + launchd)
+
+Decision/outcome: the always-on stack is one launchd unit (`scripts/com.nexus.claude-chat-gbrain.plist` → `scripts/claude-chat-gbrain-serve.sh`, KeepAlive, login auto-start) running `gbrain serve --http` (Postgres-backed, DCR off) plus `ngrok` pinned to a **free static domain** (`*.ngrok-free.dev`, value in gitignored `scripts/tunnel.env`). claude.ai uses a manual read-only public PKCE client with `refresh_token`. End-to-end verified from claude.ai: read works, write refused.
+
+Choices: ngrok free static domain over a Cloudflare named tunnel because the latter needs a recurring-fee domain; ngrok's one-time OAuth-page interstitial is acceptable (server-to-server traffic never sees it). Script polls child PIDs instead of `wait -n` (macOS `/bin/bash` is 3.2). Everything stays $0.

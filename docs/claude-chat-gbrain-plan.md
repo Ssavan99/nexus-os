@@ -1,6 +1,6 @@
 # Claude Chat (claude.ai) GBrain Plan
 
-Status: Phase 2D.1 — VERIFIED. claude.ai is connected read-only to the GBrain brain over a Cloudflare quick tunnel; read works, write refused end-to-end. Always-on (2D.2) pending.
+Status: Phase 2D.2 — DONE. claude.ai is connected read-only to the GBrain brain over a **permanent** ngrok static URL, served by an always-on `gbrain serve --http` under launchd, backed by **local Postgres** (migrated off PGLite). Read works, write refused, end-to-end verified.
 
 This document covers how claude.ai (cloud-hosted Claude chat) accesses the GBrain-backed brain safely.
 
@@ -29,28 +29,41 @@ The throwaway test client was revoked. Read-only is enforced by the server, not 
 
 > Note: GBrain's HTTP `tools/list` returns all tools regardless of scope (enforcement is at call time). claude.ai will *display* write tools, but every write call is rejected. Cosmetic only.
 
-## Connection Architecture
+## Connection Architecture (as built)
 
 ```text
-claude.ai (custom connector, OAuth 2.1)
-   -> HTTPS tunnel (Cloudflare)
-   -> gbrain serve --http  (--bind 0.0.0.0 --public-url <tunnel> [--enable-dcr])
-   -> OAuth: read-scoped client  -> GBrain index (read tools only)
+claude.ai (custom connector, OAuth 2.1, manual public PKCE client)
+   -> HTTPS ngrok static domain (plaster-paving-water.ngrok-free.dev — value kept in scripts/tunnel.env, gitignored)
+   -> gbrain serve --http  (--bind 127.0.0.1 --public-url <ngrok-url>, DCR off)
+   -> OAuth: read-scoped client  -> local Postgres-backed GBrain (read tools only)
 ```
 
-## The PGLite Constraint (important)
+Both `gbrain serve --http` and `ngrok` run under one launchd unit (`scripts/com.nexus.claude-chat-gbrain.plist` → `scripts/claude-chat-gbrain-serve.sh`), KeepAlive, auto-start at login.
 
-The brain runs on **PGLite** (embedded, single-writer). A long-lived `serve --http` holds an exclusive file lock for its lifetime, so other gbrain processes / CLI ops can time out ("Timed out waiting for PGLite lock"). This shapes how the server is run for an always-on setup — see the phased rollout below. The single-owner model (2D.2) sidesteps this without a DB migration.
+## Engine: migrated PGLite → local Postgres (important)
 
-## Phased Rollout (cost-optimized: $0 now → robust always-on later)
+Originally the brain ran on **PGLite** (embedded, single-writer): a long-lived `serve --http` holds an exclusive file lock, and — critically — an **unclean stop corrupts the data dir** (cluster left "in production" → WAL-replay crash → `PGLite ... WASM ... Aborted()` on next open). We hit exactly this when a `serve --http` was `pkill`ed (see decision log 2026-06-24). Recovery: `pg_resetwal -f` on `~/.gbrain/brain.pglite` (needs `postgresql@17`).
+
+That fragility is unacceptable for an always-on server, so the brain was **migrated to local Postgres**:
+
+```sh
+brew services start postgresql@17           # always-on DB service ($0, local)
+brew install pgvector                        # GBrain schema needs the vector extension
+createdb gbrain && psql -d gbrain -c 'CREATE EXTENSION vector; CREATE EXTENSION pg_trgm;'
+gbrain migrate --to supabase --url postgresql://localhost:5432/gbrain   # "supabase" == generic postgres target
+```
+
+Postgres is crash-safe and supports concurrent connections, so: an unclean stop no longer corrupts the brain, and the always-on HTTP server coexists with the local stdio agents (Codex, Claude Code) — they read the new engine transparently via `~/.gbrain/config.json` (now `engine: postgres`). The old PGLite dir is preserved at `~/.gbrain/brain.pglite` as a backup.
+
+## Rollout history (cost-optimized: $0 throughout)
 
 | Stage | What | Cost | Always-on |
 |---|---|---|---|
-| 2D.1 validate | On-demand `serve --http` + quick Cloudflare tunnel; existing PGLite; no local-agent changes | $0 | No (manual) |
-| 2D.2 durable | One `serve --http` as sole brain owner under macOS launchd; local agents (Codex, Claude Code) switch to `gbrain connect http://localhost:<port>/mcp` (full scope); **named** Cloudflare tunnel for a stable URL | $0 (opt. ~$8/yr domain) | Yes, while Mac awake |
-| 2D.3 independent | Move gbrain + **Postgres** (`init --url`) to a small VPS or home server | ~$5/mo or 1-time HW | Yes, 24/7 |
+| 2D.1 validate | On-demand `serve --http` + quick Cloudflare tunnel; PGLite | $0 | No (manual) |
+| 2D.2 durable (BUILT) | Local Postgres engine + `serve --http` + **ngrok static domain**, all under launchd (KeepAlive, login auto-start) | $0 | Yes, while Mac awake |
+| 2D.3 independent (future) | Move gbrain + Postgres to a small VPS / home server | ~$5/mo or 1-time HW | Yes, 24/7 |
 
-Cost notes: Cloudflare Tunnel is free (stable hostname ideally needs a domain on Cloudflare). Supabase free tier is a poor always-on DB (pauses ~1 week idle, 500 MB cap); Neon free serverless Postgres is the preferred $0 cloud DB if 2D.3 is pursued.
+Cost notes: ngrok free tier includes 1 static domain ($0); it shows a one-time browser interstitial on the OAuth consent page (click "Visit Site" once — server-to-server MCP traffic never sees it). A Cloudflare named tunnel was the alternative but needs a recurring-fee domain, so ngrok was chosen.
 
 ## Runbook — 2D.1 Validation (VERIFIED 2026-06-24)
 
@@ -109,7 +122,29 @@ which is also the safer posture (open DCR does not clamp scope to `read`).
 - Negative test (write rejected) is a required acceptance criterion. ✅ verified end-to-end from claude.ai.
 - DCR stays OFF: open DCR (`--enable-dcr`) does NOT clamp self-registered clients to `read` (they may request `write`/`admin`), so it must not be left exposed on a public tunnel.
 
-## Open Items
+## 2D.2 Operations (the live always-on setup)
 
-- DCR vs pre-registered client: confirm which claude.ai's connector flow expects (try DCR first; fall back to manual client_id/secret).
-- For 2D.2: launchd plist for `serve --http`; named Cloudflare tunnel; migrate local agents to `gbrain connect localhost`.
+- **Connector URL:** `https://plaster-paving-water.ngrok-free.dev/mcp` (permanent).
+- **Client:** read-only public PKCE client `claude-chat-readonly`, grants `authorization_code,refresh_token` (refresh_token avoids the 1h TTL drop), redirect `https://claude.ai/api/mcp/auth_callback`. The Client ID is pasted into claude.ai's Advanced/OAuth field (no secret). Re-register with `gbrain auth register-client … --scopes read --token-endpoint-auth-method none --redirect-uri …`.
+- **Service control:**
+  ```sh
+  launchctl list | grep com.nexus.claude-chat-gbrain      # status (PID, last exit)
+  launchctl unload ~/Library/LaunchAgents/com.nexus.claude-chat-gbrain.plist   # stop
+  launchctl load -w ~/Library/LaunchAgents/com.nexus.claude-chat-gbrain.plist  # start
+  tail -f /tmp/nexus-launchd.out /tmp/nexus-gbrain-http.log /tmp/nexus-ngrok.log
+  ```
+- **Config:** `scripts/tunnel.env` (gitignored) holds `STABLE_DOMAIN`. ngrok authtoken is in the user's ngrok config. Postgres runs via `brew services` (also auto-start).
+- **Gotcha fixed:** macOS `/bin/bash` is 3.2 — no `wait -n`; the serve script polls both child PIDs instead.
+- **If PGLite is ever used again and crashes:** `pg_resetwal -f -D ~/.gbrain/brain.pglite` (via `postgresql@17`) clears the crashed WAL state. Not relevant now that the engine is Postgres.
+
+## Security Invariants (recap)
+
+- Cloud connector gets `read` scope only; enforced server-side. DCR stays OFF (it doesn't clamp self-registered clients to `read`).
+- `scripts/tunnel.env`, ngrok authtoken, and any client secret stay out of the repo.
+- Raw stdio GBrain MCP stays local-only (Codex, Claude Code); never tunneled.
+- Stop the server gracefully; with Postgres an unclean stop is safe, but still prefer `launchctl unload` over `kill -9`.
+
+## Open Items / Future
+
+- 2D.3: move Postgres + gbrain to an always-on host (small VPS / home server) for 24/7 reach independent of the Mac being awake.
+- Optional: a tiny `tools/list` filter so claude.ai only *displays* read tools (cosmetic; enforcement already correct).

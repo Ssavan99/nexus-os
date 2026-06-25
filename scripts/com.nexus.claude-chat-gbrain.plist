@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Phase 2D.2 — launchd unit that keeps the GBrain read-only HTTP MCP + ngrok
+  static tunnel running for the claude.ai connector.
+
+  Install:
+    cp scripts/com.nexus.claude-chat-gbrain.plist ~/Library/LaunchAgents/
+    launchctl load -w ~/Library/LaunchAgents/com.nexus.claude-chat-gbrain.plist
+  Stop / uninstall:
+    launchctl unload -w ~/Library/LaunchAgents/com.nexus.claude-chat-gbrain.plist
+  Status / logs:
+    launchctl list | grep com.nexus.claude-chat-gbrain
+    tail -f /tmp/nexus-launchd.out /tmp/nexus-gbrain-http.log /tmp/nexus-ngrok.log
+
+  Requires scripts/tunnel.env with STABLE_DOMAIN set, and ngrok authtoken configured.
+-->
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.nexus.claude-chat-gbrain</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/bin/bash</string>
+        <string>/Users/ssavan99/repos/nexus-os/scripts/claude-chat-gbrain-serve.sh</string>
+    </array>
+
+    <key>WorkingDirectory</key>
+    <string>/Users/ssavan99/repos/nexus-os</string>
+
+    <key>RunAtLoad</key>
+    <true/>
+
+    <key>KeepAlive</key>
+    <true/>
+
+    <!-- Don't hammer-restart on rapid failures (e.g. ngrok auth not set yet). -->
+    <key>ThrottleInterval</key>
+    <integer>10</integer>
+
+    <key>StandardOutPath</key>
+    <string>/tmp/nexus-launchd.out</string>
+    <key>StandardErrorPath</key>
+    <string>/tmp/nexus-launchd.err</string>
+
+    <!-- Ensure Homebrew + bun binaries are on PATH under launchd. -->
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>/opt/homebrew/bin:/Users/ssavan99/.bun/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+    </dict>
+</dict>
+</plist>

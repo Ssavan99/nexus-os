@@ -1,6 +1,9 @@
 .env
 .env.*
 !.env.example
+
+# Phase 2D.2: local tunnel endpoint config (keeps the brain's public URL out of the repo)
+scripts/tunnel.env
 __pycache__/
 *.pyc
 .DS_Store
