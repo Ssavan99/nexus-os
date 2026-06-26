@@ -31,9 +31,10 @@ Goal: establish the local brain and connect it to GBrain safely.
 Goal: connect coding and writing agents to the same GBrain-backed memory.
 
 - Phase 2A status: verified. Codex uses local GBrain MCP over stdio without copying private brain files into Nexus OS.
-- Phase 2B status: verified. ChatGPT uses the `Nexus GBrain Readonly Memory` connector through Secure MCP Tunnel and the read-only wrapper at `/Users/ssavan99/MCPs/nexus-gbrain-readonly-mcp`; raw GBrain MCP is not safe for ChatGPT.
+- Phase 2B status: verified (superseded by 2E). ChatGPT originally used the `Nexus GBrain Readonly Memory` connector through Secure MCP Tunnel + the read-only wrapper at `/Users/ssavan99/MCPs/nexus-gbrain-readonly-mcp`; raw GBrain MCP is not safe for ChatGPT.
 - Phase 2C status: verified. Claude Code uses raw local GBrain MCP at user scope in `~/.claude.json` (global, all projects); a restarted session loaded all 89 `mcp__gbrain__*` tools and `get_brain_identity` returned the local brain. Operating instructions at `docs/claude-code-gbrain-operating-instructions.md`.
 - Phase 2D status: 2D.2 DONE. claude.ai is connected to GBrain's native `serve --http` (OAuth 2.1, manual `read`-scoped public PKCE client, DCR off) over a **permanent ngrok static URL**, always-on under launchd. The brain was **migrated PGLite → local Postgres** (crash-safe, concurrent) after an unclean PGLite `serve --http` stop corrupted the data dir (recovered via `pg_resetwal -f`). End-to-end verified: read works, write refused. Helpers: `scripts/claude-chat-gbrain-serve.sh`, `scripts/com.nexus.claude-chat-gbrain.plist`. Plan + ops at `docs/claude-chat-gbrain-plan.md`. Future: 2D.3 (move to an always-on host for 24/7).
+- Phase 2E status: DONE. ChatGPT unified onto the same always-on native HTTP MCP as claude.ai, using its own `read`-scoped public PKCE client (DCR off) and a Developer-Mode "User-Defined OAuth Client" connector at the permanent ngrok URL. Read verified from ChatGPT; write refused server-side. Retires the per-session tunnel-client/wrapper ritual (kept as fallback). See `docs/chatgpt-readonly-connector.md`.
 - Verify shared memory means shared Markdown brain files plus GBrain index, not shared chat histories.
 - Document agent-specific operating instructions.
 

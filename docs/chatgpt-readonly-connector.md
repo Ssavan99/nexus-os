@@ -1,8 +1,33 @@
 # ChatGPT Read-Only GBrain Connector
 
-Status: Phase 2B.11 success.
+Status: Phase 2E (2026-06-25) — ChatGPT migrated to the always-on native HTTP MCP. The tunnel-client/wrapper path below is RETIRED (kept as fallback only).
 
-Use this path for daily ChatGPT memory lookup:
+## Current path (Phase 2E): native always-on HTTP MCP — zero manual commands
+
+ChatGPT (Developer Mode custom connector) now uses the same always-on endpoint as claude.ai:
+
+```text
+ChatGPT custom connector (OAuth, "User-Defined OAuth Client")
+  -> https://plaster-paving-water.ngrok-free.dev/mcp   (ngrok static domain)
+  -> gbrain serve --http (local Postgres engine, DCR off, under launchd)
+  -> OAuth: read-scoped public PKCE client "chatgpt-readonly"
+```
+
+- Connector URL: `https://plaster-paving-water.ngrok-free.dev/mcp`
+- Registration method: **User-Defined OAuth Client**; Client ID = `chatgpt-readonly` client; **no secret**; token-endpoint auth method **none**.
+- ChatGPT's per-connector redirect URI was `https://chatgpt.com/connector/oauth/<id>` (read off the New App dialog; re-register the client if recreated).
+- Read-only enforced server-side (writes refused with `insufficient_scope`); ChatGPT individual tiers are read/fetch-only anyway.
+- **No terminal commands per session** — the launchd stack (see `docs/claude-chat-gbrain-plan.md`) auto-starts at login. This is the success criterion vs the old wrapper.
+
+Verified 2026-06-25: read (`search`) returns brain results from ChatGPT.
+
+To decommission the old path: disconnect the old `Nexus GBrain Readonly Memory` connector in ChatGPT and stop running `openai-tunnel-client`. Keep the wrapper code (below) as fallback.
+
+---
+
+## RETIRED path (Phase 2B): tunnel-client + wrapper (fallback only)
+
+Previously, daily ChatGPT lookup used:
 
 ```text
 ChatGPT -> Secure MCP Tunnel -> tunnel-client -> nexus-gbrain-readonly-mcp -> GBrain CLI/search -> real GBrain index

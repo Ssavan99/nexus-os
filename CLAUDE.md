@@ -18,7 +18,7 @@ Current client boundary:
 
 - Codex may use raw local GBrain MCP over stdio.
 - Claude Code uses raw local GBrain MCP registered at user scope in `~/.claude.json` (global, all sessions).
-- ChatGPT must use the read-only wrapper connector only: `Nexus GBrain Readonly Memory` via `/Users/ssavan99/MCPs/nexus-gbrain-readonly-mcp`.
+- ChatGPT uses the same native always-on HTTP MCP as claude.ai (`gbrain serve --http`, OAuth 2.1) with its own `read`-scoped client — read-only enforced server-side. The old `nexus-gbrain-readonly-mcp` wrapper + `openai-tunnel-client` path is retired (kept as fallback). See `docs/chatgpt-readonly-connector.md`.
 - Claude chat / claude.ai uses GBrain's native `serve --http` (OAuth 2.1) with a `read`-scoped client — read-only is enforced server-side, so no custom wrapper is needed. See `docs/claude-chat-gbrain-plan.md`.
 - Do not expose raw GBrain MCP (full scope) to ChatGPT or Claude chat. Cloud surfaces get a `read`-scoped token only; raw stdio MCP stays local-only (Codex, Claude Code) and is never tunneled.
 
