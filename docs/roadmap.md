@@ -1,5 +1,7 @@
 # Nexus OS Roadmap
 
+> **For the detailed, current operating plan (3 goal-categories, sequence, and Category-3 backlog), see [`docs/master-plan.md`](master-plan.md) — that is the living reference any agent should read first.** This file is the phase overview.
+
 Nexus OS is now planned as a personalized workflow/config/control layer around GBrain, not a standalone memory engine.
 
 The current CLI/search/ingest code remains available as prototype/fallback workflow helpers. Do not remove it until GBrain is installed, tested, and Nexus workflows no longer depend on it.
@@ -40,10 +42,15 @@ Goal: connect coding and writing agents to the same GBrain-backed memory.
 
 ## Phase 3: Nexus Workflows
 
-Goal: build personalized workflows on top of GBrain.
+Goal: build personalized workflows on top of GBrain. Organized via the **3 goal-categories** (Startup loops, Job system, Improve Nexus/GBrain); see the revised plan.
 
-- Job-search workflows.
-- Startup and business workflows.
+Foundation (in progress, 2026-06-27):
+- **Weekly checklist engine** — the unifying primitive (per-area implementation backlog → weekly combined checklist). Spec: `docs/workflows/weekly-checklist-engine.md`. Status: spec done; first artifacts pending (vault writes, user-approved).
+- **Local embeddings** — DONE. Semantic search enabled on the Postgres brain via local Ollama (`nomic-embed-text`, 768d); 299/299 chunks embedded; $0/private. Required resizing `content_chunks.embedding` 1280→768 (column was empty) per gbrain's embedding-migrations recipe.
+- **raw→wiki coverage gap** — mapped: 20 of 48 raw sources un-integrated (2 are job seeds, 1 system note).
+
+Then:
+- Startup loops; Job-search workflows (capture job reels first).
 - Weekly planning and review workflows.
 - Personal knowledge maintenance workflows.
 - Research and learning workflows.

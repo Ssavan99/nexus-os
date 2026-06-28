@@ -22,6 +22,7 @@ Current client boundary:
 
 Read these docs before making architecture changes:
 
+- `docs/master-plan.md` — the living operating plan (3 goal-categories, sequence, current state); read this first.
 - `docs/architecture.md`
 - `docs/gbrain-integration.md`
 - `docs/decision-log.md`
