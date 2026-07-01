@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Nexus v1 — keep the GBrain brain in sync with the Obsidian vault.
+  Runs scripts/nexus-brain-sync.sh at login and every 5 minutes (idempotent,
+  ~2-3s, only changed notes re-process). No git; import-based.
+
+  Install:
+    cp scripts/com.nexus.brain-sync.plist ~/Library/LaunchAgents/
+    launchctl load -w ~/Library/LaunchAgents/com.nexus.brain-sync.plist
+  Force a sync now:
+    launchctl kickstart -k gui/$(id -u)/com.nexus.brain-sync
+  Stop:
+    launchctl unload -w ~/Library/LaunchAgents/com.nexus.brain-sync.plist
+  Logs:
+    tail -f /tmp/nexus-brain-sync.out /tmp/nexus-brain-sync.err
+-->
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.nexus.brain-sync</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/bin/bash</string>
+        <string>/Users/ssavan99/repos/nexus-os/scripts/nexus-brain-sync.sh</string>
+    </array>
+
+    <key>RunAtLoad</key>
+    <true/>
+
+    <key>StartInterval</key>
+    <integer>300</integer>
+
+    <key>StandardOutPath</key>
+    <string>/tmp/nexus-brain-sync.out</string>
+    <key>StandardErrorPath</key>
+    <string>/tmp/nexus-brain-sync.err</string>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>/opt/homebrew/bin:/Users/ssavan99/.bun/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+    </dict>
+</dict>
+</plist>

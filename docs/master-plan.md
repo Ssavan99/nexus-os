@@ -34,34 +34,30 @@ Both Startup and Job plug into this. Per-area **implementation backlog** (priori
 
 ## Sequence
 
-### NOW — Foundation primitive
-1. ✅ Map raw→wiki coverage gap.
-2. ✅ Engine spec.
-3. ✅ Local embeddings.
-4. ⬜ Generate first artifacts: startup area backlog + first weekly checklist (vault writes, user-approved). Job area stub waits on capture.
-5. ⬜ Confirm "show/refresh my weekly checklist" runs from every agent.
+**Current single focus: complete the Nexus system (v1 → straight into v2).** Rationale: the user works best finishing one thing fully before starting another; Nexus is already mid-build, so we finish it end-to-end (core + nice infrastructure + easy accessibility/UI) before doing deep startup/job *execution*. Implement the full Nexus vision, dropping only pieces we jointly decide aren't worth it (e.g. possibly loop engineering). **Parked until Nexus is complete:** Startup execution (plan captured in `wiki/areas/startups/backlog.md`, idea TBD in Claude chat) and the Job system (job reels to be uploaded when possible).
 
-### THEN — Category 2: Job system (capture-first)
-1. Make IG-reel capture **repeatable** (saved reel → vault → brain), then run it on the job reels (Phase 4).
-2. Job-search workflow + backlog (the job twin of `founder-operating-system`).
-3. Application tracking board (Markdown/brain records; Notion-exportable).
-4. Automation, **human-gated**: Apify/Greenhouse scrape roles ≤24h → tailor resume → queue for approval before submit; separate referral-alert path for FAANG/Fortune-250. Flags: job-site ToS, human-in-the-loop on submit.
+### Foundation — done
+1. ✅ raw→wiki coverage gap mapped · 2. ✅ engine spec · 3. ✅ local embeddings · 4. ✅ startup backlog generated (weekly checklist deferred until execution).
 
-### ONGOING — Category 1: Startup loops
-Activate existing playbooks via the engine: customer discovery, build/launch, networking, sales; run the weekly evidence loop already in `founder-operating-system`. Little new capture.
+### Nexus v1 — finish now (makes it usable day-to-day)
+1. ✅ **Vault → brain sync** — `gbrain import` under launchd (`scripts/nexus-brain-sync.sh`, every 5 min + login); no git (Drive-safe); idempotent; verified picking up new notes.
+2. ⬜ **Capture pipeline (Phase 4)** — repeatable low-friction "source → vault → brain" (for job reels + future resources).
+3. ⬜ **Runnable checklist engine** — the spec as a prompt-pack/skill any agent invokes (`refresh-backlog`, `generate-week`, `complete`); the daily driver.
+4. ⬜ **Docs polish** — README (what it is + setup) + terse tips/tricks doc + de-clutter.
+5. ⬜ *(light)* **Dedup pass.**
 
-### LATER — Category 3: System evolution (incremental)
-- **Docs:** professional README + a separate terse tips/tricks doc + de-clutter current docs.
-- **Dedup pass:** flag notes that add nothing; delete on approval.
-- **Open-source prep:** license, contributor docs, secrets hygiene (already good).
-- **Team / Notion:** personal vault stays private per-person; **Notion = shared team layer** (tracking, meetings, boards); checklist engine exports there.
-- **Shared writeback** (open decision): today cloud agents are read-only; local agents write. A reviewed/scoped cloud-write path is a future architecture decision.
-- **Multi-agent + OSS models:** premium models (Claude/ChatGPT) for planning + PR review; open-source/local models for bulk dev/execution.
-- **Omnigent (Databricks, OSS meta-harness):** orchestrates Claude Code/Codex/Pi with portable context, policy + async approvals, sandbox, web/mobile UI. Strong candidate for the Category-3 orchestration + UI + human-approval layer; leverages subscription-backed harnesses (not paid API). Evaluate after foundation (alpha).
-- **UI:** don't build custom soon — Obsidian (vault) + GBrain `/admin` + native chat apps cover it; neither Claude nor ChatGPT exposes subscription models to external API, so a custom app can't cheaply wrap them. Let Omnigent/GBrain-admin be the UI later.
-- **Agent operating convention:** treat the brain as ONE source, combined with web + model reasoning — not brain-in-isolation. (Add to agent docs.)
-- **Social-media video pipeline** (loose-note): user voice/image → daily AI videos for startup identity. Later marketing automation.
-- **Embeddings:** done (local). Revisit API only if scale/quality ever demands.
+### Nexus v2 — continue right after v1 (complete the vision)
+- **Nice infrastructure + accessibility/UI** — a mission-control surface over the brain/workflows/dashboards (Obsidian + GBrain `/admin` today; evaluate **Omnigent** — Databricks OSS meta-harness orchestrating Claude Code/Codex/Pi with portable context, async approvals, sandbox, web/mobile UI — as the unified UI + orchestration layer, leveraging subscription-backed harnesses, not paid API). Realistic constraint: a UI manages the brain/agents/tasks; it does **not** wrap the chat models (Claude/ChatGPT don't expose subscription models to external API).
+- **Multi-agent + OSS models** — premium (Claude/ChatGPT) for planning + PR review; OSS/local for bulk dev/execution.
+- **Team / Notion** — personal vault stays private per-person; Notion = shared team layer; checklist engine exports there.
+- **Shared writeback** (open decision) — today cloud agents are read-only; a reviewed/scoped cloud-write path is a deliberate future call.
+- **Agent operating convention** — treat the brain as ONE source combined with web + model reasoning, not brain-in-isolation (add to agent docs).
+- **Loop / harness engineering toward no-prompt operation** — implement only the parts that prove worth it.
+- **Social-media video pipeline** — note: this is a *startup* tool, not Nexus; build under startup execution.
+
+### After Nexus is complete — resume the parked work
+- **Job system** (capture job reels → workflow + backlog → tracking board → human-gated auto-apply + referral alerts).
+- **Startup execution** (run the captured `backlog.md` Phase A→C once the idea is chosen).
 
 ## Guardrails (carry across all work)
 
@@ -70,7 +66,7 @@ Activate existing playbooks via the engine: customer discovery, build/launch, ne
 - Vault writes only on explicit user approval.
 - Stop the always-on server gracefully (`launchctl unload`), not `kill -9` (Postgres makes this safe now, but still).
 - Don't duplicate GBrain (no custom search/RAG/MCP/cron engine in Nexus OS).
-- Don't over-build Category 3 (no-prompt/harness/Omnigent) before Categories 1 & 2 deliver value manually.
+- Finish Nexus (v1 → v2) before deep startup/job execution — the user's chosen sequencing (one thing fully, to avoid overwhelm). Within v2, implement the full vision but drop pieces that don't earn their keep.
 
 ## Pointers
 
