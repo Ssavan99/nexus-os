@@ -210,3 +210,7 @@ Decision: keep the GBrain brain current with the Obsidian vault using a periodic
 Implementation: `scripts/nexus-brain-sync.sh` (import → embed --stale → extract --stale) run by `scripts/com.nexus.brain-sync.plist` (launchd, RunAtLoad + StartInterval 300s). Verified: a newly-added note (`raw/sources/instagram/brians-job-search`) flowed into the brain automatically. Force a sync: `launchctl kickstart -k gui/$(id -u)/com.nexus.brain-sync`.
 
 Nexus now runs four auto-start launchd/brew services: postgresql@17, ollama, com.nexus.claude-chat-gbrain (serve --http + ngrok), com.nexus.brain-sync.
+
+## [2026-07-01] Nexus v1 Complete
+
+Milestone: the core Nexus system is usable day-to-day. Delivered: (1) vault→brain sync via launchd `gbrain import` (5-min, no git, Drive-safe); (2) capture pipeline handling all reel/post types with a mandatory content summary; (3) capture + weekly-checklist workflows mirrored into the brain so any agent (incl. claude.ai/ChatGPT) can invoke them by trigger phrase; (4) README rewritten to current state + `docs/usage-tips.md` + stale planning docs archived under `docs/archive/`; (5) dedup scan — vault clean (no stubs, 0 identical-content pairs). Next: Nexus v2 (nice infrastructure + accessibility/UI; evaluate alternatives incl. Databricks Omnigent for orchestration/UI).

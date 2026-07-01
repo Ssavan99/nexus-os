@@ -39,12 +39,14 @@ Both Startup and Job plug into this. Per-area **implementation backlog** (priori
 ### Foundation — done
 1. ✅ raw→wiki coverage gap mapped · 2. ✅ engine spec · 3. ✅ local embeddings · 4. ✅ startup backlog generated (weekly checklist deferred until execution).
 
-### Nexus v1 — finish now (makes it usable day-to-day)
+### Nexus v1 — COMPLETE (2026-07-01)
 1. ✅ **Vault → brain sync** — `gbrain import` under launchd (`scripts/nexus-brain-sync.sh`, every 5 min + login); no git (Drive-safe); idempotent; verified picking up new notes.
-2. ⬜ **Capture pipeline (Phase 4)** — repeatable low-friction "source → vault → brain" (for job reels + future resources).
-3. ⬜ **Runnable checklist engine** — the spec as a prompt-pack/skill any agent invokes (`refresh-backlog`, `generate-week`, `complete`); the daily driver.
-4. ⬜ **Docs polish** — README (what it is + setup) + terse tips/tricks doc + de-clutter.
-5. ⬜ *(light)* **Dedup pass.**
+2. ✅ **Capture pipeline** — `docs/workflows/capture-pipeline.md`; handles all post/reel types (caption/transcript/screenshot/URL) with a mandatory content summary.
+3. ✅ **Runnable checklist engine** — workflows mirrored to the brain (`wiki/areas/nexus-os/workflows.md`) with trigger phrases; any agent (incl. cloud) can run capture + checklist.
+4. ✅ **Docs polish** — README rewritten to current state; `docs/usage-tips.md` added; stale planning docs archived under `docs/archive/`.
+5. ✅ **Dedup pass** — vault scanned: no empty/stub files, 0 identical-content pairs; clean, nothing to remove.
+
+**Nexus v1 is usable day-to-day:** edit notes → synced in ≤5 min; capture from any agent; checklist workflows invocable everywhere; read-only cloud + full local access; everything auto-starts at login.
 
 ### Nexus v2 — continue right after v1 (complete the vision)
 - **Nice infrastructure + accessibility/UI** — a mission-control surface over the brain/workflows/dashboards (Obsidian + GBrain `/admin` today; evaluate **Omnigent** — Databricks OSS meta-harness orchestrating Claude Code/Codex/Pi with portable context, async approvals, sandbox, web/mobile UI — as the unified UI + orchestration layer, leveraging subscription-backed harnesses, not paid API). Realistic constraint: a UI manages the brain/agents/tasks; it does **not** wrap the chat models (Claude/ChatGPT don't expose subscription models to external API).

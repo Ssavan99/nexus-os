@@ -1,134 +1,68 @@
 # Nexus OS
 
-Nexus OS is a personalized GBrain-based operating layer for a private Markdown/Obsidian brain.
+Nexus OS is a personal operating layer around a private Markdown/Obsidian "brain," shared across every AI agent you use. It is **not** a memory engine — [GBrain](https://github.com/garrytan/gbrain) is the engine that indexes and serves the brain. Nexus OS is the public repo that holds the schemas, workflows, prompts, roadmap, and thin glue that make that brain useful for personal, career, and startup work.
 
-It is not a standalone memory engine and not a replacement for GBrain. GBrain is the intended core memory/search/MCP/skills engine. Nexus OS stores the personal schemas, prompts, workflows, roadmap, and control logic that make the GBrain-backed brain useful for personal, career, startup, and agent workflows.
+One brain, many agents: Codex, Claude Code, claude.ai, and ChatGPT all read the same memory.
 
-## Final Architecture
+## Architecture
 
-The system has four main parts:
+Four layers:
 
-- Markdown/Obsidian brain: the private, human-readable source of truth.
-- GBrain: the local engine that indexes and serves the brain through search, MCP, skills, and future dream-cycle or cron workflows.
-- Nexus OS: this public repo, containing personalization, workflow instructions, prompts, schemas, roadmap, and future custom UI or skills.
-- Agents and clients: Codex, Claude Code, ChatGPT via MCP, and later Hermes/OpenClaw, all connecting to the same GBrain-backed memory.
+- **Markdown/Obsidian vault** — the private, human-readable source of truth (`raw/`, `wiki/`, `inbox/`). Lives outside this repo.
+- **GBrain** — local engine: indexing, keyword + semantic search, MCP, skills. Backed by **local Postgres** + **pgvector**, with **local embeddings** (Ollama).
+- **Nexus OS** (this repo) — personalization: workflow specs, schemas, prompts, roadmap, decision log, service scripts.
+- **Agents** — clients that use the shared brain (see access model below).
 
-Shared memory means shared brain files plus the GBrain index. It does not mean shared chat histories.
+Shared memory = shared vault files + the GBrain index. Not shared chat histories.
 
-Current agent connection posture:
+## How agents connect
 
-- Codex: raw local GBrain MCP over stdio.
-- Claude Code: planned raw local GBrain MCP.
-- ChatGPT: read-only wrapper only, via the `Nexus GBrain Readonly Memory` connector. See [docs/chatgpt-readonly-connector.md](docs/chatgpt-readonly-connector.md).
-- Claude chat / claude.ai: planned read-only remote connector only.
+| Agent | Transport | Access |
+|---|---|---|
+| Codex | raw local stdio MCP | full (read/write) |
+| Claude Code | raw local stdio MCP (`~/.claude.json`) | full (read/write) |
+| claude.ai | always-on HTTP MCP (OAuth 2.1) over an ngrok static URL | **read-only** (`read` scope, server-enforced) |
+| ChatGPT | same always-on HTTP MCP, its own read client | **read-only** |
 
-Raw GBrain MCP must not be used as the daily ChatGPT connector because it exposes write/admin/destructive tools.
+Cloud surfaces get a `read`-scoped token only — writes are refused by the server. Raw MCP stays local-only and is never tunneled. Details: [docs/claude-chat-gbrain-plan.md](docs/claude-chat-gbrain-plan.md), [docs/chatgpt-readonly-connector.md](docs/chatgpt-readonly-connector.md).
 
-See:
+## Running system
 
-- [docs/architecture.md](docs/architecture.md)
-- [docs/gbrain-integration.md](docs/gbrain-integration.md)
-- [docs/decision-log.md](docs/decision-log.md)
-- [docs/roadmap.md](docs/roadmap.md)
+Everything auto-starts at login as background services (macOS launchd / brew services):
 
-## Public Repo, Private Brain
+- `postgresql@17` — the brain database
+- `ollama` — local embeddings (`nomic-embed-text`)
+- `com.nexus.claude-chat-gbrain` — `gbrain serve --http` + ngrok static tunnel (the cloud connector)
+- `com.nexus.brain-sync` — imports the vault into the brain every 5 min (see `scripts/`)
 
-This repository must never contain your real notes, clipped articles, raw sources, generated wiki pages, or personal brain files. It only contains code, templates, prompts, workflows, schemas, and documentation.
+So: edit a note in Obsidian → it's searchable by every agent within ~5 minutes; no manual commands.
 
-Your real Markdown/Obsidian brain lives outside this repo. Existing prototype helpers read that location from:
+## Setup (outline)
 
-```sh
-export VAULT_PATH="/absolute/path/to/your/private/obsidian/brain"
-```
+Personal setup; paths are examples. High level:
 
-You can also copy `.env.example` to `.env` for local use. `.env` is ignored by git.
+1. Install GBrain; `gbrain init` a brain on Postgres (`gbrain migrate --to supabase --url postgresql://localhost/<db>` migrates an existing PGLite brain). Add `pgvector` + `pg_trgm`.
+2. Local embeddings: install Ollama, `ollama pull nomic-embed-text`, set `embedding_model: ollama:nomic-embed-text` (768d) in `~/.gbrain/config.json`, `gbrain embed --stale`.
+3. Connect local agents: Codex + Claude Code use raw stdio `gbrain serve` (Claude Code config lives in `~/.claude.json`, not `settings.json`).
+4. Cloud connector: register a `read`-scoped public PKCE OAuth client per surface; run `gbrain serve --http` behind a stable tunnel (this repo uses an ngrok static domain); add the custom connector in claude.ai / ChatGPT.
+5. Install the launchd services in `scripts/` (connector + brain-sync). See each `*.plist` header for install commands.
 
-Prototype helpers refuse to run if:
+Full, current operating plan: **[docs/master-plan.md](docs/master-plan.md)**.
 
-- `VAULT_PATH` is missing.
-- `VAULT_PATH` resolves inside this repository.
+## Repo layout
 
-This protects the public repo/private brain boundary.
+- `docs/master-plan.md` — the living operating plan (read first).
+- `docs/architecture.md`, `docs/roadmap.md`, `docs/decision-log.md` — architecture, phases, decisions.
+- `docs/workflows/` — invocable workflow specs (capture pipeline, weekly-checklist engine).
+- `docs/*-operating-instructions.md`, connector docs — per-agent contracts.
+- `scripts/` — service scripts + launchd plists (connector, brain-sync). Local config (`scripts/tunnel.env`) is gitignored.
+- `docs/archive/` — historical planning notes (superseded; kept for provenance).
+- `src/`, `templates/` — prototype/fallback CLI helpers (legacy; retired once GBrain fully covers the workflows).
 
-## What Nexus OS Owns
+## Boundaries
 
-Nexus OS should contain:
+- This public repo must never contain private brain content (notes, sources, generated wiki). The vault lives outside it; `raw/ wiki/ inbox/ …` are gitignored.
+- Cloud agents are read-only; vault writes happen only with explicit approval.
+- Don't duplicate GBrain (no custom vector DB / search / MCP / skills / cron engine here).
 
-- Personal operating principles.
-- Workflow prompts.
-- Job-search workflows.
-- Startup and business workflows.
-- Weekly planning workflows.
-- Capture and ingestion instructions.
-- Roadmaps and architecture decisions.
-- Personal schemas and conventions.
-- Thin integration glue around GBrain when needed.
-- Future custom UI or skills specific to this operating layer.
-
-## What GBrain Owns
-
-GBrain should own:
-
-- Indexing.
-- Search.
-- Retrieval.
-- MCP server/tool surfaces.
-- Skills engine.
-- Memory engine internals.
-- Future scheduled or dream-cycle workflows.
-
-Do not build duplicate GBrain features in Nexus OS unless explicitly requested later.
-
-## Prototype/Fallback Helpers
-
-The current Nexus OS CLI/search/ingest implementation is reclassified as prototype/fallback workflow helpers.
-
-These commands may remain while GBrain is not installed or while workflows are being validated:
-
-```sh
-PYTHONPATH=src python -m nexus_os --help
-```
-
-Current helper commands include:
-
-- `check`
-- `init`
-- `add-note`
-- `search`
-- `plan-ingest`
-- `draft-summary`
-- `append-log`
-- `rebuild-index`
-
-Do not remove these helpers yet. Retire or delete them only after GBrain is installed, tested, and Nexus workflows no longer depend on them.
-
-## Manual Workflow During Transition
-
-Until GBrain is installed and connected, the prototype helpers can still support a manual Codex-driven workflow:
-
-```sh
-PYTHONPATH=src python -m nexus_os add-note ./note.md --source-type documents
-PYTHONPATH=src python -m nexus_os plan-ingest raw/sources/documents/note.md
-PYTHONPATH=src python -m nexus_os draft-summary raw/sources/documents/note.md
-PYTHONPATH=src python -m nexus_os rebuild-index
-PYTHONPATH=src python -m nexus_os append-log --type ingest --title "Note Title" --path "raw/sources/documents/note.md"
-```
-
-This is not the final memory architecture. It is a fallback path for early workflow design.
-
-## What Not To Build Here
-
-Do not build these in Nexus OS unless a later explicit architecture decision changes this:
-
-- Custom vector database.
-- Custom RAG/search engine.
-- Custom MCP server.
-- Custom skills engine.
-- Duplicate GBrain memory engine.
-- Background dream-cycle/cron engine.
-
-Prefer configuring, extending, or integrating with GBrain.
-
-## Next Step
-
-The next implementation step is Phase 1: install and configure GBrain against the private Markdown/Obsidian brain, then verify indexing/search and agent connection paths without copying private brain files into this public repo.
+Day-to-day usage (trigger phrases, capturing sources, managing services): **[docs/usage-tips.md](docs/usage-tips.md)**.
